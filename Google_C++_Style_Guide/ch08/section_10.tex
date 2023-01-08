@@ -1,0 +1,15 @@
+%! Author = codeclabs-cn
+%! Date = 2022/12/29
+
+\section{Use of constexpr}\label{sec:use-of-constexpr}
+Use \mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{constexpr} to define true constants or to ensure constant initialization.
+
+\subsection{Definition}
+Some variables can be declared \mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{constexpr} to indicate the variables are true constants, i.e., fixed at compilation/link time. Some functions and constructors can be declared \mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{constexpr} which enables them to be used in defining a \mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{constexpr} variable.
+
+\subsection{Pros}
+Use of \mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{constexpr} enables definition of constants with floating-point expressions rather than just literals; definition of constants of user-defined types; and definition of constants with function calls.
+\subsection{Cons}
+Prematurely marking something as \mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{constexpr} may cause migration problems if later on it has to be downgraded. Current restrictions on what is allowed in \mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{constexpr} functions and constructors may invite obscure workarounds in these definitions.
+\subsection{Decision}
+\mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{constexpr} definitions enable a more robust specification of the constant parts of an interface. Use \mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{constexpr} to specify true constants and the functions that support their definitions. Avoid complexifying function definitions to enable their use with \mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{constexpr}. Do not use \mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{constexpr} to force inlining.

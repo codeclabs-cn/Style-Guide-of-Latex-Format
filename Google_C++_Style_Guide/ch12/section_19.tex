@@ -1,0 +1,123 @@
+%! Author = codeclabs-cn
+%! Date = 2022/12/30
+
+\section{Horizontal Whitespace}\label{sec:horizontal-whitespace}
+Use of horizontal whitespace depends on location. Never put trailing whitespace at the end of a line.
+
+    \subsection{General}
+    \begin{minted}[mathescape,
+        linenos,
+        numbersep=5pt,
+        autogobble, % 左对齐
+        breaklines,
+        frame=lines,
+        framesep=2mm]{C++}
+int i = 0;  // Two spaces before end-of-line comments.
+
+void f(bool b) {  // Open braces should always have a space before them.
+  ...
+int i = 0;  // Semicolons usually have no space before them.
+// Spaces inside braces for braced-init-list are optional.  If you use them,
+// put them on both sides!
+int x[] = { 0 };
+int x[] = {0};
+
+// Spaces around the colon in inheritance and initializer lists.
+class Foo : public Bar {
+ public:
+  // For inline function implementations, put spaces between the braces
+  // and the implementation itself.
+  Foo(int b) : Bar(), baz_(b) {}  // No spaces inside empty braces.
+  void Reset() { baz_ = 0; }  // Spaces separating braces from implementation.
+  ...
+    \end{minted}
+    Adding trailing whitespace can cause extra work for others editing the same file, when they merge, as can removing existing trailing whitespace. So: Don't introduce trailing whitespace. Remove it if you're already changing that line, or do it in a separate clean-up operation (preferably when no-one else is working on the file).
+    \subsection{Loops and Conditionals}
+    \begin{minted}[mathescape,
+        linenos,
+        numbersep=5pt,
+        autogobble, % 左对齐
+        breaklines,
+        frame=lines,
+        framesep=2mm]{C++}
+if (b) {          // Space after the keyword in conditions and loops.
+} else {          // Spaces around else.
+}
+while (test) {}   // There is usually no space inside parentheses.
+switch (i) {
+for (int i = 0; i < 5; ++i) {
+// Loops and conditions may have spaces inside parentheses, but this
+// is rare.  Be consistent.
+switch ( i ) {
+if ( test ) {
+for ( int i = 0; i < 5; ++i ) {
+// For loops always have a space after the semicolon.  They may have a space
+// before the semicolon, but this is rare.
+for ( ; i < 5 ; ++i) {
+  ...
+
+// Range-based for loops always have a space before and after the colon.
+for (auto x : counts) {
+  ...
+}
+switch (i) {
+  case 1:         // No space before colon in a switch case.
+    ...
+  case 2: break;  // Use a space after a colon if there's code after it.
+    \end{minted}
+
+    \subsection{Operators}
+    \begin{minted}[mathescape,
+        linenos,
+        numbersep=5pt,
+        autogobble, % 左对齐
+        breaklines,
+        frame=lines,
+        framesep=2mm]{C++}
+// Assignment operators always have spaces around them.
+x = 0;
+
+// Other binary operators usually have spaces around them, but it's
+// OK to remove spaces around factors.  Parentheses should have no
+// internal padding.
+v = w * x + y / z;
+v = w*x + y/z;
+v = w * (x + z);
+
+// No spaces separating unary operators and their arguments.
+x = -5;
+++x;
+if (x && !y)
+  ...
+
+    \end{minted}
+    \subsection{Templates and Casts}
+    \begin{minted}[mathescape,
+        linenos,
+        numbersep=5pt,
+        autogobble, % 左对齐
+        breaklines,
+        frame=lines,
+        framesep=2mm]{C++}
+// No spaces inside the angle brackets (< and >), before
+// <, or between >( in a cast
+std::vector<std::string> x;
+y = static_cast<char*>(x);
+
+// Spaces between type and pointer are OK, but be consistent.
+std::vector<char *> x;
+    \end{minted}
+    \subsection{Vertical Whitespace}
+    Minimize use of vertical whitespace.
+
+    This is more a principle than a rule: don't use blank lines when you don't have to. In particular, don't put more than one or two blank lines between functions, resist starting functions with a blank line, don't end functions with a blank line, and be sparing with your use of blank lines. A blank line within a block of code serves like a paragraph break in prose: visually separating two thoughts.
+
+    The basic principle is: The more code that fits on one screen, the easier it is to follow and understand the control flow of the program. Use whitespace purposefully to provide separation in that flow.
+
+    Some rules of thumb to help when blank lines may be useful:
+    \begin{itemize}
+        \item Blank lines at the beginning or end of a function do not help readability.
+        \item Blank lines inside a chain of if-else blocks may well help readability.
+        \item A blank line before a comment line usually helps readability — the introduction of a new comment suggests the start of a new thought, and the blank line makes it clear that the comment goes with the following thing instead of the preceding.
+        \item Blank lines immediately inside a declaration of a namespace or block of namespaces may help readability by visually separating the load-bearing content from the (largely non-semantic) organizational wrapper. Especially when the first declaration inside the namespace(s) is preceded by a comment, this becomes a special case of the previous rule, helping the comment to \enquote{attach} to the subsequent declaration.
+    \end{itemize}

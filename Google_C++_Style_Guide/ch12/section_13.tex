@@ -1,0 +1,25 @@
+%! Author = codeclabs-cn
+%! Date = 2022/12/30
+
+\section{Return Values}\label{sec:return-values}
+Do not needlessly surround the \mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{return} expression with parentheses.
+
+Use parentheses in \mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{return expr;} only where you would use them in \mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{x = expr;}.
+\begin{minted}{C++}
+return result;                  // No parentheses in the simple case.
+// Parentheses OK to make a complex expression more readable.
+return (some_long_condition &&
+        another_condition);
+\end{minted}
+
+\begin{minted}[mathescape,
+    bgcolor=code_bg_con,
+    linenos,
+    numbersep=5pt,
+    autogobble, % 左对齐
+    breaklines,
+    frame=lines,
+    framesep=2mm]{C++}
+return (value);                // You wouldn't write var = (value);
+return(result);                // return is not a function!
+\end{minted}

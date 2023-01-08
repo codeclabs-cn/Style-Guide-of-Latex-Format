@@ -1,0 +1,52 @@
+%! Author = codeclabs-cn
+%! Date = 2022/12/29
+
+\section{\texorpdfstring{\mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{thread_local}}{\texttwoinferior} Variables}\label{sec:thread_local-variables}
+\mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{thread_local} variables that aren't declared inside a function must be initialized with a true compile-time constant, and this must be enforced by using the \href{https://github.com/abseil/abseil-cpp/blob/master/absl/base/attributes.h}{ABSL\_CONST\_INIT} attribute. Prefer \mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{thread_local} over other ways of defining thread-local data.
+
+\subsection{Definition}
+Variables can be declared with the \mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{thread_local} specifier:
+% \vspace{-\baselineskip}
+\begin{minted}{C++}
+thread_local Foo foo = ...;
+\end{minted}
+
+Such a variable is actually a collection of objects, so that when different threads access it, they are actually accessing different objects. \mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{thread_local} variables are much like \hyperref[sec:static-and-global-variables]{static storage duration variables} in many respects. For instance, they can be declared at namespace scope, inside functions, or as static class members, but not as ordinary class members.
+
+\mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{thread_local} variable instances are initialized much like static variables, except that they must be initialized separately for each thread, rather than once at program startup. This means that \mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{thread_local} variables declared within a function are safe, but other \mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{thread_local} variables are subject to the same initialization-order issues as static variables (and more besides).
+
+\mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{thread_local} variable instances are not destroyed before their thread terminates, so they do not have the destruction-order issues of static variables.
+
+\subsection{Pros}
+\begin{itemize}
+    \item Thread-local data is inherently safe from races (because only one thread can ordinarily access it), which makes \mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{thread_local} useful for concurrent programming.
+    \item \mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{thread_local} is the only standard-supported way of creating thread-local data.
+\end{itemize}
+
+\subsection{Cons}
+\begin{itemize}
+    \item Accessing a \mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{thread_local} variable may trigger execution of an unpredictable and uncontrollable amount of other code.
+    \item \mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{thread_local} variables are effectively global variables, and have all the drawbacks of global variables other than lack of thread-safety.
+    \item The memory consumed by a \mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{thread_local} variable scales with the number of running threads (in the worst case), which can be quite large in a program.
+    \item Non-static data members cannot be \mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{thread_local}.
+    \item \mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{thread_local} may not be as efficient as certain compiler intrinsics.
+\end{itemize}
+
+\subsection{Decision}
+\mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{thread_local} variables inside a function have no safety concerns, so they can be used without restriction. Note that you can use a function-scope \mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{thread_local} to simulate a class- or namespace-scope \mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{thread_local} by defining a function or static method that exposes it:
+% \vspace{-\baselineskip}
+\begin{minted}{C++}
+Foo& MyThreadLocalFoo() {
+  thread_local Foo result = ComplicatedInitialization();
+  return result;
+}
+\end{minted}
+
+\mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{thread_local} variables at class or namespace scope must be initialized with a true compile-time constant (i.e., they must have no dynamic initialization). To enforce this, \mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{thread_local} variables at class or namespace scope must be annotated with \href{https://github.com/abseil/abseil-cpp/blob/master/absl/base/attributes.h}{ABSL\_CONST\_INIT} (or \mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{constexpr}, but that should be rare):
+% \vspace{-\baselineskip}
+\begin{minted}{C++}
+ABSL_CONST_INIT thread_local Foo foo = ...;
+\end{minted}
+
+\mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{thread_local} should be preferred over other mechanisms for defining thread-local data.
+

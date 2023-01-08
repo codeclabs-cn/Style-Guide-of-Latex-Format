@@ -1,0 +1,9 @@
+%! Author = codeclabs-cn
+%! Date = 2022/12/29
+
+\section{Friends}\label{sec:friends}
+We allow use of \mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{friend} classes and functions, within reason.
+
+Friends should usually be defined in the same file so that the reader does not have to look in another file to find uses of the private members of a class. A common use of \mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{friend} is to have a \mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{FooBuilder} class be a friend of \mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{Foo} so that it can construct the inner state of \mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{Foo} correctly, without exposing this state to the world. In some cases it may be useful to make a unittest class a friend of the class it tests.
+
+Friends extend, but do not break, the encapsulation boundary of a class. In some cases this is better than making a member public when you want to give only one other class access to it. However, most classes should interact with other classes solely through their public members.

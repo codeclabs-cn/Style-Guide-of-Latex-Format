@@ -1,0 +1,37 @@
+%! Author = codeclabs-cn
+%! Date = 2022/12/30
+
+\section{Preprocessor Directives}\label{sec:preprocessor-directives}
+The hash mark that starts a preprocessor directive should always be at the beginning of the line.
+
+Even when preprocessor directives are within the body of indented code, the directives should start at the beginning of the line.
+% \vspace{-\baselineskip}
+\begin{minted}{C++}
+// Good - directives at beginning of line
+  if (lopsided_score) {
+#if DISASTER_PENDING      // Correct -- Starts at beginning of line
+    DropEverything();
+# if NOTIFY               // OK but not required -- Spaces after #
+    NotifyClient();
+# endif
+#endif
+    BackToNormal();
+  }
+\end{minted}
+% \vspace{-\baselineskip}
+\begin{minted}[mathescape,
+    bgcolor=code_bg_con,
+    linenos,
+    numbersep=5pt,
+    autogobble, % 左对齐
+    breaklines,
+    frame=lines,
+    framesep=2mm]{C++}
+// Bad - indented directives
+  if (lopsided_score) {
+    #if DISASTER_PENDING  // Wrong!  The "#if" should be at beginning of line
+    DropEverything();
+    #endif                // Wrong!  Do not indent "#endif"
+    BackToNormal();
+  }
+\end{minted}

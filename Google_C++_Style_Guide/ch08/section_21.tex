@@ -1,0 +1,36 @@
+%! Author = codeclabs-cn
+%! Date = 2022/12/29
+
+\section{Boost}\label{sec:boost}
+Use only approved libraries from the Boost library collection.
+
+\subsection{Definition}
+The \href{https://www.boost.org/}{Boost library collection} is a popular collection of peer-reviewed, free, open-source C++ libraries.
+
+\subsection{Pros}
+Boost code is generally very high-quality, is widely portable, and fills many important gaps in the C++ standard library, such as type traits and better binders.
+
+\subsection{Cons}
+Some Boost libraries encourage coding practices which can hamper readability, such as metaprogramming and other advanced template techniques, and an excessively \enquote{functional} style of programming.
+
+\subsection{Decision}
+In order to maintain a high level of readability for all contributors who might read and maintain code, we only allow an approved subset of Boost features. Currently, the following libraries are permitted:
+\begin{itemize}
+\item \href{https://www.boost.org/libs/utility/call_traits.htm}{Call Traits} from \mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{boost/call_traits.hpp}
+\item \href{https://www.boost.org/libs/utility/compressed_pair.htm}{Compressed Pair} from \mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{boost/compressed_pair.hpp}
+\item \href{https://www.boost.org/libs/graph/}{The Boost Graph Library (BGL)} from \mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{boost/graph}, except serialization (\mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{adj_list_serialize.hpp}) and parallel/distributed algorithms and data structures (\mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{boost/graph/parallel/*} and \mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{boost/graph/distributed/*}).
+\item \href{https://www.boost.org/libs/property_map/}{Property Map} from \mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{boost/property_map}, except parallel/distributed property maps (\mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{boost/property_map/parallel/*}).
+\item \href{https://www.boost.org/libs/iterator/}{Iterator} from \mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{boost/iterator}
+\item The part of \href{https://www.boost.org/libs/polygon/}{Polygon} that deals with Voronoi diagram construction and doesn't depend on the rest of Polygon: \mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{boost/polygon/voronoi_builder.hpp}, \mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{boost/polygon/voronoi_diagram.hpp}, and \mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{boost/polygon/voronoi_geometry_type.hpp}
+\item \href{https://www.boost.org/libs/bimap/}{Bimap} from \mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{boost/bimap}
+\item \href{https://www.boost.org/libs/math/doc/html/dist.html}{Statistical Distributions and Functions} from \mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{boost/math/distributions}
+\item \href{https://www.boost.org/libs/math/doc/html/special.html}{Special Functions} from \mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{boost/math/special_functions}
+\item \href{https://www.boost.org/libs/math/doc/html/root_finding.html}{Root Finding Functions} from \mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{boost/math/tools}
+\item \href{https://www.boost.org/libs/multi_index/}{Multi-index} from \mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{boost/multi_index}
+\item \href{https://www.boost.org/libs/heap/}{Heap} from \mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{boost/heap}
+\item The flat containers from \href{https://www.boost.org/libs/container/}{Container}: \mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{boost/container/flat_map}, and \mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{boost/container/flat_set}
+\item \href{https://www.boost.org/libs/intrusive/}{Intrusive} from \mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{boost/intrusive}.
+\item \href{https://www.boost.org/libs/sort/}{The boost/sort library}.
+\item \href{https://www.boost.org/libs/preprocessor/}{Preprocessor} from \mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{boost/preprocessor}.
+\end{itemize}
+We are actively considering adding other Boost features to the list, so this list may be expanded in the future.

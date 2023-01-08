@@ -1,0 +1,50 @@
+%! Author = codeclabs-cn
+%! Date = 2022/12/29
+
+\section{Class Template Argument Deduction}\label{sec:class-template-argument-deduction}
+Use class template argument deduction only with templates that have explicitly opted into supporting it.
+
+\subsection{Definition}
+\hyperref[sec:class-template-argument-deduction]{Class template argument deduction} (often abbreviated \enquote{CTAD}) occurs when a variable is declared with a type that names a template, and the template argument list is not provided (not even empty angle brackets):
+% \vspace{-\baselineskip}
+\begin{minted}[mathescape,
+linenos,
+numbersep=5pt,
+autogobble, % 左对齐
+breaklines,
+frame=lines,
+framesep=2mm]{C++}
+std::array a = {1, 2, 3};  // `a` is a std::array<int, 3>
+\end{minted}
+The compiler deduces the arguments from the initializer using the template's \enquote{deduction guides}, which can be explicit or implicit.
+
+Explicit deduction guides look like function declarations with trailing return types, except that there's no leading \mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{auto}, and the function name is the name of the template. For example, the above example relies on this deduction guide for \mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{std::array}:
+% \vspace{-\baselineskip}
+\begin{minted}[mathescape,
+linenos,
+numbersep=5pt,
+autogobble, % 左对齐
+breaklines,
+frame=lines,
+framesep=2mm]{C++}
+namespace std {
+template <class T, class... U>
+array(T, U...) -> std::array<T, 1 + sizeof...(U)>;
+}
+\end{minted}
+Constructors in a primary template (as opposed to a template specialization) also implicitly define deduction guides.
+
+When you declare a variable that relies on CTAD, the compiler selects a deduction guide using the rules of constructor overload resolution, and that guide's return type becomes the type of the variable.
+
+\subsection{Pros}
+CTAD can sometimes allow you to omit boilerplate from your code.
+
+\subsection{Cons}
+The implicit deduction guides that are generated from constructors may have undesirable behavior, or be outright incorrect. This is particularly problematic for constructors written before CTAD was introduced in C++17, because the authors of those constructors had no way of knowing about (much less fixing) any problems that their constructors would cause for CTAD. Furthermore, adding explicit deduction guides to fix those problems might break any existing code that relies on the implicit deduction guides.
+
+CTAD also suffers from many of the same drawbacks as \mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{auto}, because they are both mechanisms for deducing all or part of a variable's type from its initializer. CTAD does give the reader more information than \mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{auto}, but it also doesn't give the reader an obvious cue that information has been omitted.
+
+\subsection{Decision}
+Do not use CTAD with a given template unless the template's maintainers have opted into supporting use of CTAD by providing at least one explicit deduction guide (all templates in the \mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{std} namespace are also presumed to have opted in). This should be enforced with a compiler warning if available.
+
+Uses of CTAD must also follow the general rules on \hyperref[sec:type-deduction-(including-auto)]{Type deduction}.

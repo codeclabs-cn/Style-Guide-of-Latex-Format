@@ -1,0 +1,7 @@
+%! Author = codeclabs-cn
+%! Date = 2022/12/29
+
+\section{Include What You Use}\label{sec:include-what-you-use}
+If a source or header file refers to a symbol defined elsewhere, the file should directly include a header file which properly intends to provide a declaration or definition of that symbol. It should not include header files for any other reason.
+
+Do not rely on transitive inclusions. This allows people to remove no-longer-needed \mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{#include} statements from their headers without breaking clients. This also applies to related headers - \mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{foo.cc} should include \mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{bar.h} if it uses a symbol from it even if \mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{foo.h} includes \mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{bar.h}.

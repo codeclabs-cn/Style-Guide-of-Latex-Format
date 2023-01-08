@@ -1,0 +1,33 @@
+%! Author = codeclabs-cn
+%! Date = 2022/12/29
+
+\section{Rvalue References}\label{sec:rvalue-references}
+Use rvalue references only in certain special cases listed below.
+
+\subsection{Definition}
+Rvalue references are a type of reference that can only bind to temporary objects. The syntax is similar to traditional reference syntax. For example, \mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{void f(std::string&& s);} declares a function whose argument is an rvalue reference to a \mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{std::string}.
+
+When the token \mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{&&} is applied to an unqualified template argument in a function parameter, special template argument deduction rules apply. Such a reference is called forwarding reference\label{definition:forwaring-reference}.
+
+\subsection{Pros}
+\begin{itemize}
+    \item Defining a move constructor (a constructor taking an rvalue reference to the class type) makes it possible to move a value instead of copying it. If \mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{v1} is a \mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{std::vector<std::string>}, for example, then \mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{auto v2(std::move(v1))} will probably just result in some simple pointer manipulation instead of copying a large amount of data. In many cases this can result in a major performance improvement.
+    \item Rvalue references make it possible to implement types that are movable but not copyable, which can be useful for types that have no sensible definition of copying but where you might still want to pass them as function arguments, put them in containers, etc.
+    \item \mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{std::move} is necessary to make effective use of some standard-library types, such as \mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{sstd::unique_ptr}.
+    \item \hyperref[definition:forwaring-reference]{Forwarding reference}s which use the rvalue reference token, make it possible to write a generic function wrapper that forwards its arguments to another function, and works whether or not its arguments are temporary objects and/or const. This is called \enquote{perfect forwarding}.
+\end{itemize}
+
+\subsection{Cons}
+\begin{itemize}
+    \item Rvalue references are not yet widely understood. Rules like reference collapsing and the special deduction rule for forwarding references are somewhat obscure.
+    \item Rvalue references are often misused. Using rvalue references is counter-intuitive in signatures where the argument is expected to have a valid specified state after the function call, or where no move operation is performed.
+\end{itemize}
+
+\subsection{Decision}
+Do not use rvalue references (or apply the \mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{&&} qualifier to methods), except as follows:
+\begin{itemize}
+    \item You may use them to define move constructors and move assignment operators (as described in \hyperref[sec:copyable-and-movable-types]{Copyable and Movable Types}).
+    \item You may use them to define \mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{&&}-qualified methods that logically \enquote{consume} \mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{*this}, leaving it in an unusable or empty state. Note that this applies only to method qualifiers (which come after the closing parenthesis of the function signature); if you want to \enquote{consume} an ordinary function parameter, prefer to pass it by value.
+    \item You may use forwarding references in conjunction with \href{http://en.cppreference.com/w/cpp/utility/forward}{\mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{std::forward}}, to support perfect forwarding.
+    \item You may use them to define pairs of overloads, such as one taking \mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{Foo&&} and the other taking \mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{const Foo&}. Usually the preferred solution is just to pass by value, but an overloaded pair of functions sometimes yields better performance and is sometimes necessary in generic code that needs to support a wide variety of types. As always: if you're writing more complicated code for the sake of performance, make sure you have evidence that it actually helps.
+\end{itemize}

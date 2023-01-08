@@ -1,0 +1,24 @@
+%! Author = codeclabs-cn
+%! Date = 2022/12/29
+
+\section{64-bit Portability}\label{sec:64-bit-portability}
+Code should be 64-bit and 32-bit friendly. Bear in mind problems of printing, comparisons, and structure alignment.
+\begin{itemize}
+    \item Correct portable \mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{printf()} conversion specifiers for some integral typedefs rely on macro expansions that we find unpleasant to use and impractical to require (the \mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{PRI} macros from \mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{<cinttypes>}). Unless there is no reasonable alternative for your particular case, try to avoid or even upgrade APIs that rely on the \mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{printf} family. Instead use a library supporting typesafe numeric formatting, such as \href{https://github.com/abseil/abseil-cpp/blob/master/absl/strings/str_cat.h}{\mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{StrCat}} or \href{https://github.com/abseil/abseil-cpp/blob/master/absl/strings/substitute.h}{\mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{Substitute}} for fast simple conversions, or \hyperref[sec:streams]{std::ostream}.
+
+    Unfortunately, the \mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{PRI} macros are the only portable way to specify a conversion for the standard bitwidth typedefs (e.g., \mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{int64_t}, \mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{uint64_t}, \mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{int32_t}, \mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{uint32_t}, etc). Where possible, avoid passing arguments of types specified by bitwidth typedefs to \mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{printf}-based APIs. Note that it is acceptable to use typedefs for which \mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{printf} has dedicated length modifiers, such as \mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{size_t(z)}, \mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{ptrdiff_t(t)}, and \mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{maxint_t(j)}.
+    \item Remember that \mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{sizeof(void *) != sizeof(int)}. Use \mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{intptr_t} if you want a pointer-sized integer.
+    \item You may need to be careful with structure alignments, particularly for structures being stored on disk. Any class/structure with a \mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{int64_t}/\mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{uint64_t} member will by default end up being 8-byte aligned on a 64-bit system. If you have such structures being shared on disk between 32-bit and 64-bit code, you will need to ensure that they are packed the same on both architectures. Most compilers offer a way to alter structure alignment. For gcc, you can use \mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{__attribute__((packed))}. MSVC offers \mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{#pragma pack()} and \mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{__declspec(align())}.
+    \item Use \hyperref[sec:casting]{braced-initialization} as needed to create 64-bit constants. For example:
+    % \vspace{-\baselineskip}
+    \begin{minted}[mathescape,
+        linenos,
+        numbersep=5pt,
+        autogobble, % 左对齐
+        breaklines,
+        frame=lines,
+        framesep=2mm]{C++}
+int64_t my_value{0x123456789};
+uint64_t my_mask{uint64_t{3} << 48};
+    \end{minted}
+\end{itemize}

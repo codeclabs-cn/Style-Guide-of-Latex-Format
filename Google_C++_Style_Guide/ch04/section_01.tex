@@ -1,0 +1,151 @@
+%! Author = codeclabs-cn
+%! Date = 2022/12/29
+
+\section{Namespaces}\label{sec:namespaces}
+With few exceptions, place code in a namespace. Namespaces should have unique names based on the project name, and possibly its path. Do not use \emph{using-directives} (e.g., \mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{using namespace foo}). Do not use inline namespaces. For unnamed namespaces, see \hyperref[sec:internal-linkage]{Internal Linkage}.
+
+\subsection{Definition}
+Namespaces subdivide the global scope into distinct, named scopes, and so are useful for preventing name collisions in the global scope.
+
+\subsection{Pros}
+Namespaces provide a method for preventing name conflicts in large programs while allowing most code to use reasonably short names.
+
+For example, if two different projects have a class \mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{Foo} in the global scope, these symbols may collide at compile time or at runtime. If each project places their code in a namespace, \mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{project1::Foo} and \mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{project2::Foo} are now distinct symbols that do not collide, and code within each project's namespace can continue to refer to \mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{Foo} without the prefix.
+
+Inline namespaces automatically place their names in the enclosing scope. Consider the following snippet, for example:
+% \vspace{-\baselineskip}
+\begin{minted}{C++}
+namespace outer {
+inline namespace inner {
+  void foo();
+}  // namespace inner
+}  // namespace outer
+\end{minted}
+
+The expressions \mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{outer::inner::foo()} and \mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{outer::foo()} are interchangeable. Inline namespaces are primarily intended for ABI compatibility across versions.
+
+\subsection{Cons}
+Namespaces can be confusing, because they complicate the mechanics of figuring out what definition a name refers to.
+
+Inline namespaces, in particular, can be confusing because names aren't actually restricted to the namespace where they are declared. They are only useful as part of some larger versioning policy.
+
+In some contexts, it's necessary to repeatedly refer to symbols by their fully-qualified names. For deeply-nested namespaces, this can add a lot of clutter.
+
+\subsection{Decision}
+Namespaces should be used as follows:
+\begin{itemize}
+    \item Follow the rules on \hyperref[subsec:namespace-names]{Namespace Names}.
+    \item Terminate multi-line namespaces with comments as shown in the given examples.
+    \item Namespaces wrap the entire source file after includes, \href{https://gflags.github.io/gflags/}{gflags} definitions/declarations and forward declarations of classes from other namespaces.
+    % \vspace{-\baselineskip}
+    \begin{minted}[mathescape,
+        linenos,
+        numbersep=5pt,
+        autogobble, % 左对齐
+        breaklines,
+        frame=lines,
+        framesep=2mm]{C++}
+// In the .h file
+namespace mynamespace {
+
+// All declarations are within the namespace scope.
+// Notice the lack of indentation.
+class MyClass {
+ public:
+  ...
+  void Foo();
+};
+
+}  // namespace mynamespace
+    \end{minted}
+    % \vspace{-\baselineskip}
+    \begin{minted}[mathescape,
+        linenos,
+        numbersep=5pt,
+        autogobble, % 左对齐
+        breaklines,
+        frame=lines,
+        framesep=2mm]{C++}
+// In the .cc file
+namespace mynamespace {
+
+// Definition of functions is within scope of the namespace.
+void MyClass::Foo() {
+  ...
+}
+
+}  // namespace mynamespace
+    \end{minted}
+    More complex \mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{.cc} files might have additional details, like flags or using-declarations.
+    % \vspace{-\baselineskip}
+    \begin{minted}[mathescape,
+        linenos,
+        numbersep=5pt,
+        autogobble, % 左对齐
+        breaklines,
+        frame=lines,
+        framesep=2mm]{C++}
+#include "a.h"
+
+ABSL_FLAG(bool, someflag, false, "a flag");
+
+namespace mynamespace {
+
+using ::foo::Bar;
+
+...code for mynamespace...    // Code goes against the left margin.
+
+}  // namespace mynamespace
+    \end{minted}
+    \item To place generated protocol message code in a namespace, use the \mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{package} specifier in the \mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{.proto} file. See \href{https://developers.google.com/protocol-buffers/docs/reference/cpp-generated#package}{Protocol Buffer Packages} for details.
+    \item Do not declare anything in namespace \mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{std}, including forward declarations of standard library classes. Declaring entities in namespace \mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{std} is undefined behavior, i.e., not portable. To declare entities from the standard library, include the appropriate header file.
+    \item You may not use a \emph{using-directive} to make all names from a namespace available.
+    % \vspace{-\baselineskip}
+    \begin{minted}[mathescape,
+        bgcolor=code_bg_con,
+        linenos,
+        numbersep=5pt,
+        autogobble, % 左对齐
+        breaklines,
+        frame=lines,
+        framesep=2mm]{C++}
+// Forbidden -- This pollutes the namespace.
+using namespace foo;
+    \end{minted}
+    \item Do not use \emph{Namespace aliases} at namespace scope in header files except in explicitly marked internal-only namespaces, because anything imported into a namespace in a header file becomes part of the public API exported by that file.
+    % \vspace{-\baselineskip}
+    \begin{minted}[mathescape,
+        bgcolor=code_bg_pro,
+        linenos,
+        numbersep=5pt,
+        autogobble, % 左对齐
+        breaklines,
+        frame=lines,
+        framesep=2mm]{C++}
+// Shorten access to some commonly used names in .cc files.
+namespace baz = ::foo::bar::baz;
+    \end{minted}
+    % \vspace{-\baselineskip}
+    \begin{minted}[mathescape,
+        bgcolor=code_bg_pro,
+        linenos,
+        numbersep=5pt,
+        autogobble, % 左对齐
+        breaklines,
+        frame=lines,
+        framesep=2mm]{C++}
+// Shorten access to some commonly used names (in a .h file).
+namespace librarian {
+namespace impl {  // Internal, not part of the API.
+namespace sidetable = ::pipeline_diagnostics::sidetable;
+}  // namespace impl
+
+inline void my_inline_function() {
+  // namespace alias local to a function (or method).
+  namespace baz = ::foo::bar::baz;
+  ...
+}
+}  // namespace librarian
+    \end{minted}
+    \item Do not use inline namespaces.
+\end{itemize}

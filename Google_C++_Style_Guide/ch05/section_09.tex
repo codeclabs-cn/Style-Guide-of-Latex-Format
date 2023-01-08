@@ -1,0 +1,21 @@
+%! Author = codeclabs-cn
+%! Date = 2022/12/29
+
+\section{Declaration Order}\label{sec:declaration-order}
+Group similar declarations together, placing public parts earlier.
+
+A class definition should usually start with a \mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{public:} section, followed by \mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{protected:}, then \mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{private:}. Omit sections that would be empty.
+
+Within each section, prefer grouping similar kinds of declarations together, and prefer the following order:
+\begin{enumerate}
+    \item Types and type aliases (\mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{typedef}, \mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{using}, \mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{enum}, nested structs and classes, and \mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{friend} types)
+    \item Static constants
+    \item Factory functions
+    \item Constructors and assignment operators
+    \item Destructor
+    \item All other functions (\mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{static} and non-\mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{static} member functions, and \mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{friend} functions)
+    \item Data members (\mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{static} and non-\mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{static})
+\end{enumerate}
+
+Do not put large method definitions inline in the class definition. Usually, only trivial or performance-critical, and very short, methods may be defined inline. See \hyperref[sec:inline-functions]{Inline Functions} for more details.
+

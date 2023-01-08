@@ -1,0 +1,74 @@
+%! Author = codeclabs-cn
+%! Date = 2023/1/3
+
+\chapter{C++ Generated Code}\label{ch:c++-generated-code}
+This page describes exactly what C++ code the protocol buffer compiler generates for any given protocol definition. Any differences between proto2 and proto3 generated code are highlighted - note that these differences are in the generated code as described in this document, not the base message classes/interfaces, which are the same in both versions. You should read the proto2 language guide and/or proto3 language guide before reading this document.
+
+\section{Compiler Invocation}\label{sec:compiler-invocation}
+The protocol buffer compiler produces C++ output when invoked with the \mintinline{Protobuf}{--cpp_out=} command-line flag. The parameter to the \mintinline{Protobuf}{--cpp_out=} option is the directory where you want the compiler to write your C++ output. The compiler creates a header file and an implementation file for each \mintinline{Protobuf}{-.proto} file input. The names of the output files are computed by taking the name of the \mintinline{Protobuf}{-.proto} file and making two changes:
+So, for example, let's say you invoke the compiler as follows:
+\begin{minted}{Protobuf}
+    protoc --proto_path=src --cpp_out=build/gen src/foo.proto src/bar/baz.proto
+\end{minted}
+
+The compiler will read the files \mintinline{Protobuf}{src/foo.proto} and \mintinline{Protobuf}{src/bar/baz.proto} and produce four output files: \mintinline{Protobuf}{build/gen/foo.pb.h}, \mintinline{Protobuf}{build/gen/foo.pb.cc}, \mintinline{Protobuf}{build/gen/bar/baz.pb.h}, \mintinline{Protobuf}{build/gen/bar/baz.pb.cc}. The compiler will automatically create the directory \mintinline{Protobuf}{build/gen/bar} if necessary, but it will not create build or \mintinline{Protobuf}{build/gen}; they must already exist.
+
+\section{Packages}\label{sec:packages}
+If a \mintinline{Protobuf}{.proto} file contains a \mintinline{Protobuf}{package} declaration, the entire contents of the file will be placed in a corresponding C++ namespace. For example, given the \mintinline{Protobuf}{package} declaration:
+\begin{minted}{Protobuf}
+package foo.bar;
+\end{minted}
+All declarations in the file will reside in the \mintinline{Protobuf}{foo::bar} namespace.
+
+\section{Messages}
+Given a simple message declaration:
+\begin{minted}{Protobuf}
+    message Foo {}
+\end{minted}
+The protocol buffer compiler generates a class called \mintinline{Protobuf}{Foo}, which publicly derives from google::protobuf::Message. The class is a concrete class; no pure-virtual methods are left unimplemented. Methods that are virtual in Message but not pure-virtual may or may not be overridden by \mintinline{Protobuf}{Foo}, depending on the optimization mode. By default, \mintinline{Protobuf}{Foo} implements specialized versions of all methods for maximum speed. However, if the \mintinline{Protobuf}{.proto} file contains the line:
+\begin{minted}{Protobuf}
+    option optimize_for = CODE_SIZE;
+\end{minted}
+then \mintinline{Protobuf}{Foo} will override only the minimum set of methods necessary to function and rely on reflection-based implementations of the rest. This significantly reduces the size of the generated code, but also reduces performance. Alternatively, if the \mintinline{Protobuf}{.proto} file contains:
+\begin{minted}{Protobuf}
+    option optimize_for = LITE_RUNTIME;
+\end{minted}
+
+then \mintinline{Protobuf}{Foo} will include fast implementations of all methods, but will implement the google::protobuf::MessageLite interface, which only contains a subset of the methods of \mintinline{Protobuf}{Message}. In particular, it does not support descriptors or reflection. However, in this mode, the generated code only needs to link against \mintinline{Protobuf}{libprotobuf-lite.so} (\mintinline{Protobuf}{libprotobuf-lite.lib} on Windows) instead of \mintinline{Protobuf}{libprotobuf.so} (\mintinline{Protobuf}{libprotobuf.lib}). The \enquote{lite} library is much smaller than the full library, and is more appropriate for resource-constrained systems such as mobile phones.
+
+You should \emph{not} create your own \mintinline{Protobuf}{Foo} subclasses. If you subclass this class and override a virtual method, the override may be ignored, as many generated method calls are de-virtualized to improve performance.
+
+The \mintinline{Protobuf}{Message} interface defines methods that let you check, manipulate, read, or write the entire message, including parsing from and serializing to binary strings.
+\begin{itemize}
+    \item \mintinline{C++}{bool ParseFromString(const string& data)}: Parse the message from the given serialized binary string (also known as wire format).
+    \item \mintinline{C++}{bool SerializeToString(string* output) const}: Serialize the given message to a binary string.
+    \item \mintinline{C++}{string DebugString()}: Return a string giving the `text\_format` representation of the proto (should only be used for debugging).
+\end{itemize}
+
+In addition to these methods, the \mintinline{C++}{Foo} class defines the following methods:
+\begin{itemize}
+    \item \mintinline{C++}{Foo()}: Default constructor.
+    \item \mintinline{C++}{~Foo()}: Default destructor.
+    \item \mintinline{C++}{Foo(const Foo& other)}: Copy constructor.
+    \item \mintinline{C++}{Foo(Foo&& other)}: Move constructor.
+    \item \mintinline{C++}{Foo& operator=(const Foo& other)}: Assignment operator.
+    \item \mintinline{C++}{Foo& operator=(Foo&& other)}: Move-assignment operator.
+    \item \mintinline{C++}{void Swap(Foo* other)}: Swap content with another message.
+    \item \mintinline{C++}{const UnknownFieldSet& unknown_fields() const}: Returns the set of unknown fields encountered while parsing this message.
+    \item \mintinline{C++}{UnknownFieldSet* mutable_unknown_fields()}: Returns a pointer to the mutable set of unknown fields encountered while parsing this message.
+\end{itemize}
+
+The class also defines the following static methods:
+\begin{itemize}
+    \item \mintinline{C++}{static const Descriptor* descriptor()}: Returns the type's descriptor. This contains information about the type, including what fields it has and what their types are. This can be used with reflection to inspect fields programmatically.
+    \item \mintinline{C++}{static const Foo& default_instance()}: Returns a const singleton instance of Foo which is identical to a newly-constructed instance of Foo (so all singular fields are unset and all repeated fields are empty). Note that the default instance of a message can be used as a factory by calling its New() method.
+\end{itemize}
+
+
+
+
+
+
+
+
+

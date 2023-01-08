@@ -1,0 +1,34 @@
+%! Author = codeclabs-cn
+%! Date = 2022/12/30
+
+\section{Namespace Formatting}\label{sec:namespace-formatting}
+The contents of namespaces are not indented.
+
+\hyperref[sec:namespaces]{Namespaces} do not add an extra level of indentation. For example, use:
+\begin{minted}{C++}
+namespace {
+
+void foo() {  // Correct.  No extra indentation within namespace.
+  ...
+}
+
+}  // namespace
+\end{minted}
+Do not indent within a namespace:
+\begin{minted}[mathescape,
+    bgcolor=code_bg_con,
+    linenos,
+    numbersep=5pt,
+    autogobble, % 左对齐
+    breaklines,
+    frame=lines,
+    framesep=2mm]{C++}
+namespace {
+
+  // Wrong!  Indented when it should not be.
+  void foo() {
+    ...
+  }
+
+}  // namespace
+\end{minted}

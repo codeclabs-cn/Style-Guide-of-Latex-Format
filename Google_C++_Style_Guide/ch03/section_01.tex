@@ -1,0 +1,11 @@
+%! Author = codeclabs-cn
+%! Date = 2022/12/29
+
+\section{Self-contained Headers}\label{sec:self-contained-headers}
+Header files should be self-contained (compile on their own) and end in \mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{.h}. Non-header files that are meant for inclusion should end in \mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{.inc} and be used sparingly.
+
+All header files should be self-contained. Users and refactoring tools should not have to adhere to special conditions to include the header. Specifically, a header should have \hyperref[sec:the-define-guard]{header guards} and include all other headers it needs.
+
+When a header declares inline functions or templates that clients of the header will instantiate, the inline functions and templates must also have definitions in the header, either directly or in files it includes. Do not move these definitions to separately included header (\mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{-inl.h}) files; this practice was common in the past, but is no longer allowed. When all instantiations of a template occur in one \mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{.cc} file, either because they're \href{https://en.cppreference.com/w/cpp/language/class_template#Explicit_instantiation}{explicit} or because the definition is accessible to only the \mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{.cc} file, the template definition can be kept in that file.
+
+There are rare cases where a file designed to be included is not self-contained. These are typically intended to be included at unusual locations, such as the middle of another file. They might not use \hyperref[sec:the-define-guard]{header guards}, and might not include their prerequisites. Name such files with the \mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{.inc} extension. Use sparingly, and prefer self-contained headers when possible.

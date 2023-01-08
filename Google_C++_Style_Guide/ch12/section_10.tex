@@ -1,0 +1,75 @@
+%! Author = codeclabs-cn
+%! Date = 2022/12/30
+
+\section{Loops and Switch Statements}\label{sec:loops-and-switch-statements}
+Switch statements may use braces for blocks. Annotate non-trivial fall-through between cases. Braces are optional for single-statement loops. Empty loop bodies should use either empty braces or \mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{continue}.
+
+\mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{case} blocks in \mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{switch} statements can have curly braces or not, depending on your preference. If you do include curly braces they should be placed as shown below.
+
+If not conditional on an enumerated value, switch statements should always have a \mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{default} case (in the case of an enumerated value, the compiler will warn you if any values are not handled). If the default case should never execute, treat this as an error. For example:
+
+\begin{minted}{C++}
+switch (var) {
+  case 0: {  // 2 space indent
+    ...      // 4 space indent
+    break;
+  }
+  case 1: {
+    ...
+    break;
+  }
+  default: {
+    assert(false);
+  }
+}
+\end{minted}
+Fall-through from one case label to another must be annotated using the \mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{[[fallthrough]];} attribute. \mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{[[fallthrough]];} should be placed at a point of execution where a fall-through to the next case label occurs. A common exception is consecutive case labels without intervening code, in which case no annotation is needed.
+
+\begin{minted}{C++}
+switch (x) {
+  case 41:  // No annotation needed here.
+  case 43:
+    if (dont_be_picky) {
+      // Use this instead of or along with annotations in comments.
+      [[fallthrough]];
+    } else {
+      CloseButNoCigar();
+      break;
+    }
+  case 42:
+    DoSomethingSpecial();
+    [[fallthrough]];
+  default:
+    DoSomethingGeneric();
+    break;
+}
+\end{minted}
+
+Braces are optional for single-statement loops.
+
+\begin{minted}{C++}
+for (int i = 0; i < kSomeNumber; ++i)
+  printf("I love you\n");
+
+for (int i = 0; i < kSomeNumber; ++i) {
+  printf("I take it back\n");
+}
+\end{minted}
+Empty loop bodies should use either an empty pair of braces or \mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{continue} with no braces, rather than a single semicolon.
+\begin{minted}{C++}
+while (condition) {
+  // Repeat test until it returns false.
+}
+for (int i = 0; i < kSomeNumber; ++i) {}  // Good - one newline is also OK.
+while (condition) continue;  // Good - continue indicates no logic.
+\end{minted}
+\begin{minted}[mathescape,
+    bgcolor=code_bg_con,
+    linenos,
+    numbersep=5pt,
+    autogobble, % 左对齐
+    breaklines,
+    frame=lines,
+    framesep=2mm]{C++}
+while (condition);  // Bad - looks like part of do/while loop.
+\end{minted}

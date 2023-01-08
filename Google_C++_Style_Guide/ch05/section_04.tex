@@ -1,0 +1,15 @@
+%! Author = codeclabs-cn
+%! Date = 2022/12/29
+
+\section{Structs vs. Classes}\label{sec:structs-vs.-classes}
+Use a \mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{struct} only for passive objects that carry data; everything else is a \mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{class}.
+
+The \mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{struct} and \mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{class} keywords behave almost identically in C++. We add our own semantic meanings to each keyword, so you should use the appropriate keyword for the data-type you're defining.
+
+\mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{struct}s should be used for passive objects that carry data, and may have associated constants. All fields must be public. The struct must not have invariants that imply relationships between different fields, since direct user access to those fields may break those invariants. Constructors, destructors, and helper methods may be present; however, these methods must not require or enforce any invariants.
+
+If more functionality or invariants are required, a \mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{class} is more appropriate. If in doubt, make it a \mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{class}.
+
+For consistency with STL, you can use \mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{struct} instead of \mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{class} for stateless types, such as traits, \hyperref[sec:template-metaprogramming]{template metafunctions}, and some functors.
+
+Note that member variables in structs and classes have \hyperref[sec:variable-names]{different naming rules}.

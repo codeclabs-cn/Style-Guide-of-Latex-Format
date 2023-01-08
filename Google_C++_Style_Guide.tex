@@ -1,0 +1,193 @@
+\documentclass[11pt,titlestyle=display,twoside]{elegantbook}
+
+\title{Google C++ Style Guide}
+
+\author{Benjy Weinberger \& Craig Silverstein \& Gregory Eitzmann \& Mark Mentovai \& Tashana Landray}
+\institute{Google}
+\date{\today}
+\version{commit 78c5bdd8514b7639dffea8d74d96a03ab8b47b38}
+
+\extrainfo{Any fool can write code that a computer can understand. Good programmers write code that humans can understand. }
+
+\logo{google_horz.png}
+\cover{cover.jpg}
+
+% modify the color in the middle of titlepage
+\definecolor{customcolor}{RGB}{32,178,170}
+\colorlet{coverlinecolor}{customcolor}
+\usepackage{cprotect}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% 设置minted的背景色
+% https://www.overleaf.com/learn/latex/Using_colours_in_LaTeX
+% https://www.overleaf.com/learn/latex/Code_Highlighting_with_minted
+\definecolor{code_bg_con}{RGB}{251, 231, 218}
+\definecolor{code_bg_pro}{RGB}{221, 231, 250}
+
+% 代码高亮，outputdir指定临时文件输出目录，否则会报warning
+\usepackage[outputdir=out]{minted}
+\setminted[C++]{
+    mathescape,
+    bgcolor=code_bg_pro,
+    linenos,
+    numbersep=5pt,
+    autogobble, % 左对齐
+    breaklines,
+    frame=lines,
+    framesep=2mm
+}
+\setminted[Python]{
+    mathescape,
+    bgcolor=code_bg_pro,
+    linenos,
+    numbersep=5pt,
+    autogobble, % 左对齐
+    breaklines,
+    frame=lines,
+    framesep=2mm
+}
+\setminted[Protobuf]{
+    mathescape,
+    bgcolor=code_bg_pro,
+    linenos,
+    numbersep=5pt,
+    autogobble, % 左对齐
+    breaklines,
+    frame=lines,
+    framesep=2mm
+}
+
+\setmintedinline[C++]{breakanywhere,bgcolor=code_bg_pro}
+\usepackage{import} % 代替include命令，因为include不能嵌套
+
+% minted代码不用斜体
+% https://tex.stackexchange.com/a/469702
+\usepackage{xpatch}
+\xpatchcmd{\mintinline}{\begingroup}{\begingroup\let\itshape\relax}{}{}
+\xpatchcmd{\minted}{\VerbatimEnvironment}{\VerbatimEnvironment\let\itshape\relax}{}{}
+\xpatchcmd{\inputminted}{\begingroup}{\begingroup\let\itshape\relax}{}{}
+
+% 减小两个minted之间的距离
+% \vspace{-\medskipamount}
+% \vspace{-\baselineskip}
+%
+
+% 行内代码自动断行。需要配合\mintinline[breakanywhere]使用
+% https://github.com/gpoore/minted/issues/31#issuecomment-458640242
+\setmintedinline{breaklines}
+
+\usepackage{textcomp}
+
+% https://tex.stackexchange.com/a/347652
+%\definecolor{lightpurple}{RGB}{182,149,192}
+%
+%\usepackage{soul}
+%\sethlcolor{lightpurple}
+%
+%\hypersetup{colorlinks,urlcolor={white}}
+%
+%\let\hrefori\href
+%\renewcommand{\href}[2]{\hrefori{#1}{\hl{#2}}}
+
+% 章节开始引用名言
+% https://tex.stackexchange.com/a/193188
+\usepackage{epigraph}
+\setlength\epigraphwidth{.8\textwidth}
+\setlength\epigraphrule{0pt}
+
+% 章节作者
+% https://tex.stackexchange.com/a/156865
+\makeatletter
+\newcommand{\chapterauthor}[1]{%
+        {\centering\vspace*{-10pt}%
+    \large\scshape#1%
+    \par\nobreak\vspace*{20pt}}
+    \@afterheading%
+}
+\makeatother
+
+% 表格自动换行
+\usepackage{tabularray}
+
+% 正文中引用
+% https://www.overleaf.com/learn/latex/Typesetting_quotations
+\usepackage{dirtytalk}
+
+\PassOptionsToPackage{unicode}{hyperref}
+\PassOptionsToPackage{pdfencoding=auto}{hyperref}
+\PassOptionsToPackage{naturalnames}{hyperref}
+
+% 删除线
+% https://tex.stackexchange.com/a/23712
+\usepackage[normalem]{ulem}
+
+% 颜色
+\usepackage{xcolor}
+\usepackage{csquotes}
+\usepackage{hyperref}
+
+% checkmark
+\usepackage{amssymb}
+
+% footnote in table
+\usepackage{tablefootnote}
+
+% section中使用特殊package
+% Package hyperref Warning: Token not allowed in a PDF string (Unicode):
+% (hyperref)                removing `\@ifnextchar' on input line 4.
+% Package hyperref Warning: Token not allowed in a PDF string (Unicode):
+% (hyperref)                removing `\mintinline' on input line 4.
+%\texorpdfstring{\mintinline}{\texttwoinferior} heat}
+
+% LaTeX Font Warning: Font shape `TU/cmtt/m/n' undefined
+% (Font)              using `TU/lmr/m/n' instead on input line 1.
+\usepackage{lmodern}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{document}
+    \maketitle
+
+    \frontmatter
+    \import{./}{Google_C++_Style_Guide/ch00_The-Philosophy-of-Google's-C++-Style-Guide.tex}
+    \tableofcontents
+
+    \mainmatter
+
+    \import{./}{Google_C++_Style_Guide/ch01_background.tex}
+    \import{./}{Google_C++_Style_Guide/ch02_CPP_Version.tex}
+    \import{./}{Google_C++_Style_Guide/ch03_Header_Files.tex}
+    \import{./}{Google_C++_Style_Guide/ch04_Scoping.tex}
+    \import{./}{Google_C++_Style_Guide/ch05_Classes.tex}
+    \import{./}{Google_C++_Style_Guide/ch06_Functions.tex}
+    \import{./}{Google_C++_Style_Guide/ch07_Google-Specific_Magic.tex}
+    \import{./}{Google_C++_Style_Guide/ch08_Other_CPP_Features.tex}
+    \import{./}{Google_C++_Style_Guide/ch09_Inclusive_Language.tex}
+    \import{./}{Google_C++_Style_Guide/ch10_Naming.tex}
+    \import{./}{Google_C++_Style_Guide/ch11_Comments.tex}
+    \import{./}{Google_C++_Style_Guide/ch12_Formatting.tex}
+    \import{./}{Google_C++_Style_Guide/ch13_Exceptions_to_the_Rules.tex}
+
+    \appendix
+    \import{./}{Google_C++_Style_Guide/appendix/appendix_singular_they.tex}
+%    \import{./}{Google_C++_Style_Guide/appendix/appendix_Protocol_Buffers:C++_Generated_Code.tex}
+    \import{./}{Google_C++_Style_Guide/appendix/appendix_llvm_misc-use-after-move.tex}
+    \import{./}{Google_C++_Style_Guide/appendix/appendix_absl_memory_memory.tex}
+    \import{./}{Google_C++_Style_Guide/appendix/appendix_hyrum's_law.tex}
+    \import{./}{Google_C++_Style_Guide/appendix/appendix_totw_119.tex}
+    \import{./}{Google_C++_Style_Guide/appendix/appendix_totw_42.tex}
+    \import{./}{Google_C++_Style_Guide/appendix/appendix_totw_55.tex}
+    \import{./}{Google_C++_Style_Guide/appendix/appendix_totw_65.tex}
+    \import{./}{Google_C++_Style_Guide/appendix/appendix_totw_77.tex}
+    \import{./}{Google_C++_Style_Guide/appendix/appendix_totw_86.tex}
+    \import{./}{Google_C++_Style_Guide/appendix/appendix_totw_109.tex}
+    \import{./}{Google_C++_Style_Guide/appendix/appendix_totw_112.tex}
+    \import{./}{Google_C++_Style_Guide/appendix/appendix_totw_117.tex}
+    \import{./}{Google_C++_Style_Guide/appendix/appendix_totw_123.tex}
+    \import{./}{Google_C++_Style_Guide/appendix/appendix_totw_126.tex}
+    \import{./}{Google_C++_Style_Guide/appendix/appendix_totw_130.tex}
+    \import{./}{Google_C++_Style_Guide/appendix/appendix_totw_140.tex}
+    \import{./}{Google_C++_Style_Guide/appendix/appendix_totw_148.tex}
+
+
+\end{document}

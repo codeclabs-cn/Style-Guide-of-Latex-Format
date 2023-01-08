@@ -1,0 +1,29 @@
+%! Author = codeclabs-cn
+%! Date = 2022/12/30
+
+\section{Don'ts}\label{sec:don'ts}
+Do not state the obvious. In particular, don't literally describe what code does, unless the behavior is nonobvious to a reader who understands C++ well. Instead, provide higher level comments that describe \emph{why} the code does what it does, or make the code self describing.
+
+Compare this:
+% \vspace{-\baselineskip}
+\begin{minted}[bgcolor=code_bg_con]{C++}
+// Find the element in the vector.  <-- Bad: obvious!
+if (std::find(v.begin(), v.end(), element) != v.end()) {
+  Process(element);
+}
+\end{minted}
+To this:
+% \vspace{-\baselineskip}
+\begin{minted}{C++}
+// Process "element" unless it was already processed.
+if (std::find(v.begin(), v.end(), element) != v.end()) {
+  Process(element);
+}
+\end{minted}
+Self-describing code doesn't need a comment. The comment from the example above would be obvious:
+% \vspace{-\baselineskip}
+\begin{minted}{C++}
+if (!IsAlreadyProcessed(element)) {
+  Process(element);
+}
+\end{minted}

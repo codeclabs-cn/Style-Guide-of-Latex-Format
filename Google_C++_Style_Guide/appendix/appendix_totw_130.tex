@@ -1,0 +1,95 @@
+%! Author = codeclabs-cn
+%! Date = 2023/1/4
+
+\chapter{Tip of the Week \#130: Namespace Naming}\label{ch:tip-of-the-week-130}
+\chapterauthor{Titus Winters (titus@google.com)}
+
+\epigraph{\itshape The precision of naming takes away from the uniqueness of seeing}{---Pierre Bonnard}
+
+The earliest commit of the Google C++ Style Guide contains the guidance that many people are still using for namespace naming. Roughly, this can be summarized as \enquote{namespaces are derived from package paths}. Following on the heels of Java’s package naming requirements, this makes a lot of sense: we want to be able to uniquely identify symbols in C++ and we want there to be uniqueness and consistency in namespace choice.
+
+Except in actuality, we don’t. We just didn’t realize for almost a decade.
+
+\section{Name Lookup}
+Let’s start with how name lookup works in C++ and how it’s different from Java.
+\begin{minted}{C++}
+namespace foo {
+namespace bar {
+void f() {
+  Baz b;
+}
+}
+}
+\end{minted}
+
+In C++, lookup on an unqualified name (\mintinline{C++}{Baz}) will search expanding scopes for a symbol of the same name: first in \mintinline{C++}{f()} (the function), then in \mintinline{C++}{bar}, then in \mintinline{C++}{foo}, then in the global namespace.
+
+In Java, there is no such thing as an unqualified symbol: either a symbol is a qualified name:
+\begin{minted}{Java}
+public void f() {
+  com.google.foo.bar.Baz b = new com.google.foo.bar.Baz();
+}
+\end{minted}
+
+Or it is imported, either as a single package member or via wildcard:
+\begin{minted}{Java}
+import com.google.foo.bar.Baz;
+import com.google.foo.bar.*;
+\end{minted}
+
+In no case is \mintinline{C++}{Baz} looked for outside of the package that is explicitly provided: wildcards don’t descend into child packages, nor is search extended into parent packages. As it turns out, this difference in how parent packages/namespaces are handled within Java and C++ is fundamental to why structural namespace naming (making the namespace structure match the package hierarchy) is a mistake within C++.
+
+\section{The Problem}
+The fundamental problem for building namespaces out of packages is that we rarely rely on fully-qualified lookup in C++, normally writing \mintinline{C++}{std::unique_ptr} rather than \mintinline{C++}{::std::unique_ptr}. Coupled with lookup in enclosing namespaces, this means that for code in a deeply nested package (\mintinline{C++}{::division::section::team::subteam::project}, for example) any symbol that is not fully qualified (\mintinline{C++}{std::unique_ptr}) can in fact reference any of
+\begin{itemize}
+  \item \mintinline{C++}{::std::unique_ptr}
+  \item \mintinline{C++}{::std::unique_ptr}
+  \item \mintinline{C++}{::division::std::unique_ptr}
+  \item \mintinline{C++}{::division::section::std::unique_ptr}
+  \item \mintinline{C++}{::division::section::team::std::unique_ptr}
+  \item \mintinline{C++}{::division::section::team::subteam::std::unique_ptr}
+  \item \mintinline{C++}{::division::section::team::subteam::project::std::unique_ptr}
+\end{itemize}
+
+And what’s worse: unqualified search starts at the bottom of that list \emph{and stops as soon as there is a namespace match}. This means that your build can be broken if any of your transitive includes add a previously unused namespace that matches the leading namespace of any symbol you use out of an unqualified namespace. Strictly speaking, this doesn’t even have to be a build break: if someone adds something with a matching name and a syntactically-compatible API, the implementation of that API may be completely incompatible and cause widespread havoc at runtime. Obviously this isn’t too bad with \mintinline{C++}{std} - nobody should ever be adding a nested namespace \mintinline{C++}{std} - but what about more common namespaces? How about things like \mintinline{C++}{testing}?
+
+Names aren’t chosen to be unique. Since teams commonly create local utility packages to handle common tasks relating to the infrastructure they rely on, we wind up with local \mintinline{C++}{util} and \mintinline{C++}{pipeline} packages - and sub-namespaces. This is a recipe for unnecessary and unintended collisions.
+
+For comparison, the problem in Java is far reduced: if you wildcard-import from two packages in Java and one adds a new symbol with the same name as the other package, your build can break. This is easily and completely solved by forbidding wildcard imports as is done in many Java styles.
+
+\section{Two Consistent Options, Three Approaches}
+There are two features that prevent this build-break-at-a-distance:
+\begin{itemize}
+  \item If no leaf namespace (\mintinline{C++}{search::foo::bar}) matches any top-level namespace (\mintinline{C++}{::bar}) or a sub-namespace of any parent of that leaf (\mintinline{C++}{search::bar}), no name collisions will occur.
+  \item If there are no unqualified lookups, there will be no problems.
+\end{itemize}
+
+There are (at least) three ways to achieve this:
+\begin{itemize}
+  \item Always fully qualify everything outside of the current namespace. This is very verbose and sort of weird: nothing in C++ (including the standard library) is written with leading \mintinline{C++}{::} on every symbol.
+  \item Build some tooling to identify introduction of new namespaces and ensure that it doesn’t overlap with any other namespace in the same hierarchy. That is, do not add \mintinline{C++}{search::bar} if there is a \mintinline{C++}{::bar} or a \mintinline{C++}{search::foo::bar}.
+  \item Don’t nest deeply: a single top-level namespace per project gets the same result without long/complicated names, with less exposure to accidents, without causing surprise for new engineers, and without the need to build any tooling.
+\end{itemize}
+
+The current style guide suggests the \hyperref[subsec:namespace-names]{last option}, but allows for the old style (namespaces match package names) if necessary. This is largely because the Google didn’t want to cause too much anxiety or trigger anyone re-namespacing things. That said, if we had it to do over again in a fresh codebase we would unambiguously say this: one top-level namespace for public interfaces per project. Ensure uniqueness of namespaces via a common database. Thus we get (only) top-level namespaces like \mintinline{C++}{absl}, and can have no ambiguity in lookup (barring collision between local symbols and those in the global namespace, but modern rules discourage the global namespace anyway).
+
+Because there is so much code that existed before this change, and so much code following the old pattern even after this change, we find ourselves in a sort of half-way space, with some namespaces that often need to be fully qualified (\mintinline{C++}{::util}), and some that are obviously unique and never need to be (\mintinline{C++}{std}).
+
+\section{But It Keeps Things Organized!}
+I regularly hear people express that small/nested namespaces \enquote{keep things organized}. Putting things in their place feels right - why lump together something like \mintinline{C++}{StrCat()} and \mintinline{C++}{make_unique()} other than being in Abseil these have nothing to do with one another! Wouldn’t an \mintinline{C++}{absl::strings::utilities} namespace help differentiate from \mintinline{C++}{absl::smart_ptrs}?
+
+In other languages this would probably be good - better organization with no downside. However, because of how lookup works (expanding into successive layers of containing namespace scopes) your fine-grained namespace is impacted by every symbol (and sub-namespace) added in every parent namespace. That is: while you don’t exactly \enquote{contain} the names from parent namespaces, name/namespace collisions matter nearly as much as if you do. Small/deeply-nested namespaces don’t \emph{shield} you from this, they \emph{exacerbate} it.
+
+\section{Best Practices}
+Practically speaking, the following is the best we can do given the realities of most codebases:
+\begin{itemize}
+  \item Have a database of some form for a codebase to identify the unique namespaces.
+  \item When introducing a new namespace, use that database and introduce it as a top-level.
+  \item If for some reason the above is impossible, never ever introduce a sub-namespace that matches a well-known top-level namespace. No sub-namespaces for \mintinline{C++}{absl}, \mintinline{C++}{testing}, \mintinline{C++}{util}, etc. Try to give sub-namespaces unique names that are unlikely to collide with future top-levels.
+  \item When declaring namespace aliases and using-declarations, use fully qualified names, unless you are referring to a name inside the current namespace, as per \hyperref[ch:tip-of-the-week-119]{TotW \#119}.
+  \item For code in util or other commonly-abused namespaces, try to avoid full qualification, but qualify if necessary.
+\end{itemize}
+
+The advice in \hyperref[ch:tip-of-the-week-119]{TotW \#119} also helps, for \mintinline{C++}{.cc} files: our concern with fully-qualifying is not that it is bad, but that it is \emph{weird} compared to C++ code in the rest of the world. Limited use in using-declarations strikes an acceptable balance. However, even complete adherence to this suggestion doesn’t fully mitigate the dangers from unqualified name lookup because we still have header files and don’t want to fully qualify every symbol in every header.
+
+

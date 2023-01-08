@@ -1,0 +1,57 @@
+%! Author = codeclabs-cn
+%! Date = 2022/12/29
+
+\section{Implicit Conversions}\label{sec:implicit-conversions}
+Do not define implicit conversions. Use the \mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{explicit} keyword for conversion operators and single-argument constructors.
+
+\subsection{Definition}
+Implicit conversions allow an object of one type (called the \emph{source type}) to be used where a different type (called the \emph{destination type}) is expected, such as when passing an \mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{int} argument to a function that takes a \mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{double} parameter.
+
+In addition to the implicit conversions defined by the language, users can define their own, by adding appropriate members to the class definition of the source or destination type. An implicit conversion in the source type is defined by a type conversion operator named after the destination type (e.g., \mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{operator bool()}). An implicit conversion in the destination type is defined by a constructor that can take the source type as its only argument (or only argument with no default value).
+
+The \mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{explicit} keyword can be applied to a constructor or a conversion operator, to ensure that it can only be used when the destination type is explicit at the point of use, e.g., with a cast. This applies not only to implicit conversions, but to list initialization syntax:
+% \vspace{-\baselineskip}
+\begin{minted}{C++}
+class Foo {
+  explicit Foo(int x, double y);
+  ...
+};
+
+void Func(Foo f);
+\end{minted}
+% \vspace{-\baselineskip}
+\begin{minted}[mathescape,
+    bgcolor=code_bg_con,
+    linenos,
+    numbersep=5pt,
+    autogobble, % 左对齐
+    breaklines,
+    frame=lines,
+    framesep=2mm]{C++}
+Func({42, 3.14});  // Error
+\end{minted}
+This kind of code isn't technically an implicit conversion, but the language treats it as one as far as \mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{explicit} is concerned.
+
+\subsection{Pros}
+\begin{itemize}
+    \item Implicit conversions can make a type more usable and expressive by eliminating the need to explicitly name a type when it's obvious.
+    \item Implicit conversions can be a simpler alternative to overloading, such as when a single function with a \mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{string_view} parameter takes the place of separate overloads for \mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{std::string} and \mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{const char*}.
+    \item List initialization syntax is a concise and expressive way of initializing objects.
+\end{itemize}
+
+\subsection{Cons}
+\begin{itemize}
+    \item Implicit conversions can hide type-mismatch bugs, where the destination type does not match the user's expectation, or the user is unaware that any conversion will take place.
+    \item Implicit conversions can make code harder to read, particularly in the presence of overloading, by making it less obvious what code is actually getting called.
+    \item Constructors that take a single argument may accidentally be usable as implicit type conversions, even if they are not intended to do so.
+    \item When a single-argument constructor is not marked \mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{explicit}, there's no reliable way to tell whether it's intended to define an implicit conversion, or the author simply forgot to mark it.
+    \item Implicit conversions can lead to call-site ambiguities, especially when there are bidirectional implicit conversions. This can be caused either by having two types that both provide an implicit conversion, or by a single type that has both an implicit constructor and an implicit type conversion operator.
+    \item List initialization can suffer from the same problems if the destination type is implicit, particularly if the list has only a single element.
+\end{itemize}
+
+\subsection{Decision}
+Type conversion operators, and constructors that are callable with a single argument, must be marked \mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{explicit} in the class definition. As an exception, copy and move constructors should not be \mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{explicit}, since they do not perform type conversion.
+
+Implicit conversions can sometimes be necessary and appropriate for types that are designed to be interchangeable, for example when objects of two types are just different representations of the same underlying value. In that case, contact your project leads to request a waiver of this rule.
+
+Constructors that cannot be called with a single argument may omit \mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{explicit}. Constructors that take a single \mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{std::initializer_list} parameter should also omit \mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{explicit}, in order to support copy-initialization (e.g., \mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{MyType m = {1, 2};}).

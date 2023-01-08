@@ -1,0 +1,139 @@
+%! Author = codeclabs-cn
+%! Date = 2023/1/4
+
+\chapter{Misc Use After Move}\label{ch:misc-use-after-move}
+\chapterauthor{The Clang Team}
+
+Warns if an object is used after it has been moved, for example:
+\begin{minted}{C++}
+std::string str = "Hello, world!\n";
+std::vector<std::string> messages;
+messages.emplace_back(std::move(str));
+std::cout << str;
+\end{minted}
+
+The last line will trigger a warning that \mintinline{C++}{str} is used after it has been moved.
+
+The check does not trigger a warning if the object is reinitialized after the move and before the use. For example, no warning will be output for this code:
+\begin{minted}{C++}
+messages.emplace_back(std::move(str));
+str = "Greetings, stranger!\n";
+std::cout << str;
+\end{minted}
+
+The check takes control flow into account. A warning is only emitted if the use can be reached from the move. This means that the following code does not produce a warning:
+\begin{minted}{C++}
+if (condition) {
+  messages.emplace_back(std::move(str));
+} else {
+  std::cout << str;
+}
+\end{minted}
+
+On the other hand, the following code does produce a warning:
+\begin{minted}{C++}
+for (int i = 0; i < 10; ++i) {
+  std::cout << str;
+  messages.emplace_back(std::move(str));
+}
+\end{minted}
+
+(The use-after-move happens on the second iteration of the loop.)
+
+In some cases, the check may not be able to detect that two branches are mutually exclusive. For example (assuming that \mintinline{C++}{i} is an int):
+\begin{minted}{C++}
+if (i == 1) {
+  messages.emplace_back(std::move(str));
+}
+if (i == 2) {
+  std::cout << str;
+}
+\end{minted}
+
+In this case, the check will erroneously produce a warning, even though it is not possible for both the move and the use to be executed.
+
+An erroneous warning can be silenced by reinitializing the object after the move:
+\begin{minted}{C++}
+if (i == 1) {
+  messages.emplace_back(std::move(str));
+  str = "";
+}
+if (i == 2) {
+  std::cout << str;
+}
+\end{minted}
+
+Subsections below explain more precisely what exactly the check considers to be a move, use, and reinitialization.
+
+\section{Unsequenced moves, uses, and reinitializations}\label{sec:unsequenced-moves-uses-and-reinitializations}
+In many cases, C++ does not make any guarantees about the order in which sub-expressions of a statement are evaluated. This means that in code like the following, it is not guaranteed whether the use will happen before or after the move:
+\begin{minted}{C++}
+void f(int i, std::vector<int> v);
+std::vector<int> v = { 1, 2, 3 };
+f(v[1], std::move(v));
+\end{minted}
+In this kind of situation, the check will note that the use and move are unsequenced.
+
+The check will also take sequencing rules into account when reinitializations occur in the same statement as moves or uses. A reinitialization is only considered to reinitialize a variable if it is guaranteed to be evaluated after the move and before the use.
+
+\section{Move}
+The check currently only considers calls of \mintinline{C++}{std::move} on local variables or function parameters. It does not check moves of member variables or global variables.
+
+Any call of \mintinline{C++}{std::move} on a variable is considered to cause a move of that variable, even if the result of \mintinline{C++}{std::move} is not passed to an rvalue reference parameter.
+
+This means that the check will flag a use-after-move even on a type that does not define a move constructor or move assignment operator. This is intentional. Developers may use \mintinline{C++}{std::move} on such a type in the expectation that the type will add move semantics in the future. If such a \mintinline{C++}{std::move} has the potential to cause a use-after-move, we want to warn about it even if the type does not implement move semantics yet.
+
+Furthermore, if the result of \mintinline{C++}{std::move} is passed to an rvalue reference parameter, this will always be considered to cause a move, even if the function that consumes this parameter does not move from it, or if it does so only conditionally. For example, in the following situation, the check will assume that a move always takes place:
+\begin{minted}{C++}
+std::vector<std::string> messages;
+void f(std::string &&str) {
+  // Only remember the message if it isn't empty.
+  if (!str.empty()) {
+    messages.emplace_back(std::move(str));
+  }
+}
+std::string str = "";
+f(std::move(str));
+\end{minted}
+The check will assume that the last line causes a move, even though, in this particular case, it does not. Again, this is intentional.
+
+When analyzing the order in which moves, uses and reinitializations happen (see section \hyperref[sec:unsequenced-moves-uses-and-reinitializations]{Unsequenced moves, uses, and reinitializations}), the move is assumed to occur in whichever function the result of the \mintinline{C++}{std::move} is passed to.
+
+\section{Use}
+Any occurrence of the moved variable that is not a reinitialization (see below) is considered to be a use.
+
+An exception to this are objects of type \mintinline{C++}{std::unique_ptr}, \mintinline{C++}{std::shared_ptr} and \mintinline{C++}{std::weak_ptr}, which have defined move behavior (objects of these classes are guaranteed to be empty after they have been moved from). Therefore, an object of these classes will only be considered to be used if it is dereferenced, i.e. if \mintinline{C++}{operator*}, \mintinline{C++}{operator->} or \mintinline{C++}{operator[]} (in the case of \mintinline{C++}{std::unique_ptr<T []>}) is called on it.
+
+If multiple uses occur after a move, only the first of these is flagged.
+
+\section{Reinitialization}
+The check considers a variable to be reinitialized in the following cases:
+\begin{itemize}
+    \item The variable occurs on the left-hand side of an assignment.
+    \item The variable is passed to a function as a non-const pointer or non-const lvalue reference. (It is assumed that the variable may be an out-parameter for the function.)
+    \item \mintinline{C++}{clear()} or \mintinline{C++}{assign()} is called on the variable and the variable is of one of the standard container types \mintinline{C++}{basic_string}, \mintinline{C++}{vector}, \mintinline{C++}{deque}, \mintinline{C++}{forward_list}, \mintinline{C++}{list}, \mintinline{C++}{set}, \mintinline{C++}{map}, \mintinline{C++}{multiset}, \mintinline{C++}{multimap}, \mintinline{C++}{unordered_set}, \mintinline{C++}{unordered_map}, \mintinline{C++}{unordered_multiset}, \mintinline{C++}{unordered_multimap}.
+    \item \mintinline{C++}{reset()} is called on the variable and the variable is of type \mintinline{C++}{std::unique_ptr}, \mintinline{C++}{std::shared_ptr} or \mintinline{C++}{std::weak_ptr}.
+\end{itemize}
+
+If the variable in question is a struct and an individual member variable of that struct is written to, the check does not consider this to be a reinitialization – even if, eventually, all member variables of the struct are written to. For example:
+\begin{minted}{C++}
+struct S {
+  std::string str;
+  int i;
+};
+S s = { "Hello, world!\n", 42 };
+S s_other = std::move(s);
+s.str = "Lorem ipsum";
+s.i = 99;
+\end{minted}
+
+The check will not consider \mintinline{C++}{s} to be reinitialized after the last line; instead, the line that assigns to \mintinline{C++}{s.str} will be flagged as a use-after-move. This is intentional as this pattern of reinitializing a struct is error-prone. For example, if an additional member variable is added to \mintinline{C++}{S}, it is easy to forget to add the reinitialization for this additional member. Instead, it is safer to assign to the entire struct in one go, and this will also avoid the use-after-move warning.
+
+
+
+
+
+
+
+
+

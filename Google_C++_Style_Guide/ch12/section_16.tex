@@ -1,0 +1,39 @@
+%! Author = codeclabs-cn
+%! Date = 2022/12/30
+
+\section{Class Format}\label{sec:class-format}
+Sections in \mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{public}, \mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{protected} and \mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{private} order, each indented one space.
+
+The basic format for a class definition (lacking the comments, see \hyperref[sec:class-comments]{Class Comments} for a discussion of what comments are needed) is:
+% \vspace{-\baselineskip}
+\begin{minted}{C++}
+class MyClass : public OtherClass {
+ public:      // Note the 1 space indent!
+  MyClass();  // Regular 2 space indent.
+  explicit MyClass(int var);
+  ~MyClass() {}
+
+  void SomeFunction();
+  void SomeFunctionThatDoesNothing() {
+  }
+
+  void set_some_var(int var) { some_var_ = var; }
+  int some_var() const { return some_var_; }
+
+ private:
+  bool SomeInternalFunction();
+
+  int some_var_;
+  int some_other_var_;
+};
+\end{minted}
+
+Things to note:
+\begin{itemize}
+    \item Any base class name should be on the same line as the subclass name, subject to the 80-column limit.
+    \item The \mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{public:}, \mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{protected:}, and \mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{private:} keywords should be indented one space.
+    \item Except for the first instance, these keywords should be preceded by a blank line. This rule is optional in small classes.
+    \item Do not leave a blank line after these keywords.
+    \item The public section should be first, followed by the \mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{protected} and finally the \mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{private} section.
+    \item See \hyperref[sec:declaration-order]{Declaration Order} for rules on ordering declarations within each of these sections.
+\end{itemize}

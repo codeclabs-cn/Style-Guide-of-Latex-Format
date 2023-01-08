@@ -1,0 +1,62 @@
+%! Author = codeclabs-cn
+%! Date = 2022/12/29
+
+\section{Names and Order of Includes}\label{sec:names-and-order-of-includes}
+Include headers in the following order: Related header, C system headers, C++ standard library headers, other libraries' headers, your project's headers.
+
+All of a project's header files should be listed as descendants of the project's source directory without use of UNIX directory aliases \mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{.} (the current directory) or \mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{..} (the parent directory). For example, \mintinline[breakanywhere,breaklines]{C++}{google-awesome-project/src/base/logging.h} should be included as:
+% \vspace{-\baselineskip}
+\begin{minted}{C++}
+#include "base/logging.h"
+\end{minted}
+In \mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{dir/foo.cc} or \mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{dir/foo_test.cc}, whose main purpose is to implement or test the stuff in \mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{dir2/foo2.h}, order your includes as follows:
+
+\begin{enumerate}
+    \item \mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{dir2/foo2.h}.
+    \item A blank line
+    \item C system headers (more precisely: headers in angle brackets with the \mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{.h} extension), e.g., \mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{<unistd.h>}, \mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{<stdlib.h>}.
+    \item A blank line
+    \item C++ standard library headers (without file extension), e.g., \mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{<algorithm>}, \mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{<cstddef>}.
+    \item A blank line
+    \item Other libraries' \mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{.h} files.
+    \item A blank line
+    \item Your project's \mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{.h} files.
+\end{enumerate}
+Separate each non-empty group with one blank line.
+
+With the preferred ordering, if the related header \mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{dir2/foo2.h} omits any necessary includes, the build of \mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{dir/foo.cc} or \mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{dir/foo_test.cc} will break. Thus, this rule ensures that build breaks show up first for the people working on these files, not for innocent people in other packages.
+
+\mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{dir/foo.cc} and \mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{dir2/foo2.h} are usually in the same directory (e.g., \mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{base/basictypes_test.cc} and \mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{base/basictypes.h}), but may sometimes be in different directories too.
+
+Note that the C headers such as \mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{stddef.h} are essentially interchangeable with their C++ counterparts (\mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{cstddef}). Either style is acceptable, but prefer consistency with existing code.
+
+Within each section the includes should be ordered alphabetically. Note that older code might not conform to this rule and should be fixed when convenient.
+
+For example, the includes in \mintinline[breakanywhere]{C++}{google-awesome-project/src/foo/internal/fooserver.cc} might look like this:
+% \vspace{-\baselineskip}
+\begin{minted}{C++}
+#include "foo/server/fooserver.h"
+
+#include <sys/types.h>
+#include <unistd.h>
+
+#include <string>
+#include <vector>
+
+#include "base/basictypes.h"
+#include "foo/server/bar.h"
+#include "third_party/absl/flags/flag.h"
+\end{minted}
+
+\subsection{Exception}
+Sometimes, system-specific code needs conditional includes. Such code can put conditional includes after other includes. Of course, keep your system-specific code small and localized. Example:
+% \vspace{-\baselineskip}
+\begin{minted}{C++}
+#include "foo/public/fooserver.h"
+
+#include "base/port.h"  // For LANG_CXX11.
+
+#ifdef LANG_CXX11
+#include <initializer_list>
+#endif  // LANG_CXX11
+\end{minted}

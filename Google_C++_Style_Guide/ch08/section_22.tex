@@ -1,0 +1,13 @@
+%! Author = codeclabs-cn
+%! Date = 2022/12/29
+
+\section{Other C++ Features}\label{sec:other-c++-features}
+As with \hyperref[sec:boost]{Boost}, some modern C++ extensions encourage coding practices that hamper readability—for example by removing checked redundancy (such as type names) that may be helpful to readers, or by encouraging template metaprogramming. Other extensions duplicate functionality available through existing mechanisms, which may lead to confusion and conversion costs.
+
+\subsection{Decision}
+In addition to what's described in the rest of the style guide, the following C++ features may not be used:
+\begin{itemize}
+\item Compile-time rational numbers (\mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{<ratio>}), because of concerns that it's tied to a more template-heavy interface style.
+\item The \mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{<cfenv>} and \mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{<fenv.h>} headers, because many compilers do not support those features reliably.
+\item The \mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{<filesystem>} header, which does not have sufficient support for testing, and suffers from inherent security vulnerabilities.
+\end{itemize}

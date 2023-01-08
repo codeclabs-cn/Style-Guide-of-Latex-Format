@@ -1,0 +1,91 @@
+%! Author = codeclabs-cn
+%! Date = 2023/1/4
+
+\chapter{Tip of the Week \#123: \texorpdfstring{\mintinline{C++}{absl::optional} and \mintinline{C++}{std::unique_ptr}}{}}\label{ch:tip-of-the-week-123}
+\chapterauthor{Alexey Sokolov (sokolov@google.com) \& Etienne Dechamps (edechamps@google.com)}
+
+\section{How to Store Values}\label{sec:how-to-store-values}
+This tip discusses several ways of storing values. Here we use class member variables as an example, but many of the points below also apply to local variables.
+
+\begin{minted}{C++}
+#include <memory>
+#include "absl/types/optional.h"
+#include ".../bar.h"
+
+class Foo {
+  ...
+ private:
+  Bar val_;
+  absl::optional<Bar> opt_;
+  std::unique_ptr<Bar> ptr_;
+};
+\end{minted}
+
+\subsubsection{As a Bare Object}
+This is the simplest way. \mintinline{C++}{val_} is constructed and destroyed at the beginning of \mintinline{C++}{Foo}’s constructor and at the end of \mintinline{C++}{Foo}’s destructor, respectively. If \mintinline{C++}{Bar} has a default constructor, it doesn’t even need to be initialized explicitly.
+
+\mintinline{C++}{val_} is very safe to use, because its value can’t be null. This removes a class of potential bugs.
+
+But bare objects are not very flexible:
+\begin{itemize}
+    \item The lifetime of \mintinline{C++}{val_} is fundamentally tied to the lifetime of its parent \mintinline{C++}{Foo} object, which is sometimes not desirable. If \mintinline{C++}{Bar} supports move or swap operations, the contents of \mintinline{C++}{val_} can be replaced using these operations, while any existing pointers or references to \mintinline{C++}{val_} continue pointing or referring to the same \mintinline{C++}{val_} object (as a container), not to the value stored in it.
+    \item Any arguments that need to be passed to \mintinline{C++}{Bar}’s constructor need to be computed inside the initializer list of \mintinline{C++}{Foo}’s constructor, which can be difficult if complicated expressions are involved.
+\end{itemize}
+
+\subsubsection{As \texorpdfstring{\mintinline{C++}{absl::optional<Bar>}}{}}
+This is a good middle ground between the simplicity of bare objects and the flexibility of \mintinline{C++}{std::unique_ptr}. The object is stored inside \mintinline{C++}{Foo} but, unlike bare objects, \mintinline{C++}{absl::optional} can be empty. It can be populated at any time by assignment (\mintinline{C++}{opt_ = ...}) or by constructing the object in place (\mintinline{C++}{opt_.emplace(...)}).
+
+Because the object is stored inline, the usual caveats about allocating large objects on the stack apply, just like for a bare object. Also be aware that an empty \mintinline{C++}{absl::optional} uses as much memory as a populated one.
+
+Compared to a bare object, \mintinline{C++}{absl::optional} has a few downsides:
+\begin{itemize}
+    \item It’s less obvious for the reader where object construction and destruction occur.
+    \item There is a risk of accessing an object which does not exist.
+\end{itemize}
+
+\subsubsection{As \texorpdfstring{\mintinline{C++}{std::unique_ptr<Bar>}}{}}
+This is the most flexible way. The object is stored outside of \mintinline{C++}{Foo}. Just like \mintinline{C++}{absl::optional}, a \mintinline{C++}{std::unique_ptr} can be empty. However, unlike absl::optional, it is possible to transfer ownership of the object to something else (through a move operation), to take ownership of the object from something else (at construction or through assignment), or to assume ownership of a raw pointer (at construction or through \mintinline{C++}{ptr_ = absl::WrapUnique(...)}, see \hyperref[ch:tip-of-the-week-126]{TotW \#126}.
+
+When \mintinline{C++}{std::unique_ptr} is \mintinline{C++}{null}, it doesn’t have the object allocated, and consumes only the size of a pointer\footnote{In case of a non-empty custom deleter there is also an additional space for that deleter. }.
+
+Wrapping an object in a \mintinline{C++}{std::unique_ptr} is necessary if the object may need to outlive the scope of the \mintinline{C++}{std::unique_ptr} (ownership transfer).
+
+This flexibility comes with some costs:
+\begin{itemize}
+    \item Increased cognitive load on the reader:
+    \begin{itemize}
+        \item It’s less obvious what’s stored inside (\mintinline{C++}{Bar}, or something derived from \mintinline{C++}{Bar}). However, it may also decrease the cognitive load, as the reader can focus only on the base interface held by the pointer.
+        \item It’s even less obvious than with \mintinline{C++}{absl::optional} where object construction and destruction occur, because ownership of the object can be transferred.
+    \end{itemize}
+    \item As with \mintinline{C++}{absl::optional}, there is a risk of accessing an object which does not exist - the famous null pointer dereference.
+    \item The pointer introduces an additional level of indirection, which requires a heap allocation, and is not friendly to CPU caches; Whether this matters or not depends a lot on particular use cases.
+    \item \mintinline{C++}{std::unique_ptr<Bar>} is not copyable even if \mintinline{C++}{Bar} is. This also prevents \mintinline{C++}{Foo} from being copyable.
+\end{itemize}
+
+\section{Conclusion}
+As always, strive to avoid unnecessary complexity, and use the simplest thing that works. Prefer bare object, if it works for your case. Otherwise, try \mintinline{C++}{absl::optional}. As a last resort, use \mintinline{C++}{std::unique_ptr}.
+
+\begin{table}[!htb]
+    \centerline{
+    \begin{tblr}{width=1.2\linewidth,colspec={|X[1,c,m]|X[c,m]|X[c,m]|X[c,m]|},row{1}={bg=code_bg_pro},hspan=minimal}
+        \hline
+        \SetRow{c} Strategy           & Bar                       & \mintinline{C++}{absl::optional<Bar>} & \mintinline{C++}{std::unique_ptr<Bar>}                 \\ \hline
+        Supports delayed construction &                           & \checkmark                  & \checkmark                                    \\ \hline
+        Always safe to access         & \checkmark &                                            &                                                              \\ \hline
+        Can transfer ownership of Bar &                           &                                            & \checkmark                                    \\ \hline
+        Can store subclasses of Bar   &                           &                                            & \checkmark                                    \\ \hline
+        Movable                       & If Bar is movable         & If Bar is movable                          & \checkmark                                    \\ \hline
+        Copyable                      & If Bar is copyable        & If Bar is copyable                         &                                               \\ \hline
+        Friendly to CPU caches        & \checkmark                & \checkmark                                 &                                               \\ \hline
+        No heap allocation overhead   & \checkmark                & \checkmark                                 &                                               \\ \hline
+        Memory usage                  & \mintinline{C++}{sizeof(Bar)}               & \mintinline{C++}{sizeof(Bar)} + \mintinline{C++}{sizeof(bool)}\tablefootnote{Also padding may be added.}                 & \mintinline{C++}{sizeof(Bar*)} when \mintinline{C++}{null}, \mintinline{C++}{sizeof(Bar*)} + \mintinline{C++}{sizeof(Bar)} otherwise \\ \hline
+        Object lifetime               & Same as enclosing scope   & Restricted to enclosing scope              & Unrestricted                                                 \\ \hline
+        Call f(Bar*)                  & \mintinline{C++}{f(&val_)}                & \mintinline{C++}{f(&opt_.value())} or \mintinline{C++}{f(&*opt_)}          & \mintinline{C++}{f(ptr_.get())} or \mintinline{C++}{f(&*ptr_)}                                \\ \hline
+        Remove value                  & N/A                       & \mintinline{C++}{opt_.reset();} or \mintinline{C++}{opt_ = absl::nullopt;}   & \mintinline{C++}{ptr_.reset();} or  \mintinline{C++}{ptr_ = nullptr;}                          \\ \hline
+    \end{tblr}
+    }
+\end{table}
+
+
+
+

@@ -1,0 +1,44 @@
+%! Author = codeclabs-cn
+%! Date = 2022/12/29
+
+\section{Ownership and Smart Pointers}\label{sec:ownership-and-smart-pointers}
+Prefer to have single, fixed owners for dynamically allocated objects. Prefer to transfer ownership with smart pointers.
+
+\subsection{Definition}
+\enquote{Ownership} is a bookkeeping technique for managing dynamically allocated memory (and other resources). The owner of a dynamically allocated object is an object or function that is responsible for ensuring that it is deleted when no longer needed. Ownership can sometimes be shared, in which case the last owner is typically responsible for deleting it. Even when ownership is not shared, it can be transferred from one piece of code to another.
+
+\enquote{Smart} pointers are classes that act like pointers, e.g., by overloading the \mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{*} and \mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{->} operators. Some smart pointer types can be used to automate ownership bookkeeping, to ensure these responsibilities are met. \href{http://en.cppreference.com/w/cpp/memory/unique_ptr}{std::unique\_ptr} is a smart pointer type which expresses exclusive ownership of a dynamically allocated object; the object is deleted when the \mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{std::unique_ptr} goes out of scope. It cannot be copied, but can be moved to represent ownership transfer. \href{http://en.cppreference.com/w/cpp/memory/shared_ptr}{std::shared\_ptr} is a smart pointer type that expresses shared ownership of a dynamically allocated object. \mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{std::shared_ptr}s can be copied; ownership of the object is shared among all copies, and the object is deleted when the last \mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{std::shared_ptr} is destroyed.
+
+\subsection{Pros}
+\begin{itemize}
+    \item It's virtually impossible to manage dynamically allocated memory without some sort of ownership logic.
+    \item Transferring ownership of an object can be cheaper than copying it (if copying it is even possible).
+    \item Transferring ownership can be simpler than \enquote*{borrowing} a pointer or reference, because it reduces the need to coordinate the lifetime of the object between the two users.
+    \item Smart pointers can improve readability by making ownership logic explicit, self-documenting, and unambiguous.
+    \item Smart pointers can eliminate manual ownership bookkeeping, simplifying the code and ruling out large classes of errors.
+    \item For const objects, shared ownership can be a simple and efficient alternative to deep copying.
+\end{itemize}
+
+\subsection{Cons}
+\begin{itemize}
+    \item Ownership must be represented and transferred via pointers (whether smart or plain). Pointer semantics are more complicated than value semantics, especially in APIs: you have to worry not just about ownership, but also aliasing, lifetime, and mutability, among other issues.
+    \item The performance costs of value semantics are often overestimated, so the performance benefits of ownership transfer might not justify the readability and complexity costs.
+    \item APIs that transfer ownership force their clients into a single memory management model.
+    \item Code using smart pointers is less explicit about where the resource releases take place.
+    \item \mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{std::unique_ptr} expresses ownership transfer using move semantics, which are relatively new and may confuse some programmers.
+    \item Shared ownership can be a tempting alternative to careful ownership design, obfuscating the design of a system.
+    \item Shared ownership requires explicit bookkeeping at run-time, which can be costly.
+    \item In some cases (e.g., cyclic references), objects with shared ownership may never be deleted.
+    \item Smart pointers are not perfect substitutes for plain pointers.
+\end{itemize}
+
+\subsection{Decision}
+If dynamic allocation is necessary, prefer to keep ownership with the code that allocated it. If other code needs access to the object, consider passing it a copy, or passing a pointer or reference without transferring ownership. Prefer to use \mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{std::unique_ptr} to make ownership transfer explicit. For example:
+% \vspace{-\baselineskip}
+\begin{minted}{C++}
+std::unique_ptr<Foo> FooFactory();
+void FooConsumer(std::unique_ptr<Foo> ptr);
+\end{minted}
+Do not design your code to use shared ownership without a very good reason. One such reason is to avoid expensive copy operations, but you should only do this if the performance benefits are significant, and the underlying object is immutable (i.e., \mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{std::shared_ptr<const Foo>}). If you do use shared ownership, prefer to use \mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{std::shared_ptr}.
+
+Never use \mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{std::auto_ptr}. Instead, use \mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{std::unique_ptr}.

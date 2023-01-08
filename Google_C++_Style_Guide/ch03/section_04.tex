@@ -1,0 +1,53 @@
+%! Author = codeclabs-cn
+%! Date = 2022/12/29
+
+\section{Forward Declarations}\label{sec:forward_declarations}
+Avoid using forward declarations where possible. Instead, \hyperref[sec:include-what-you-use]{include the headers you need}.
+
+\subsection{Definition}\label{subsec:definition}
+A \enquote{forward declaration} is a declaration of an entity without an associated definition.
+% \vspace{-\baselineskip}
+\begin{minted}{C++}
+// In a C++ source file:
+class B;
+void FuncInB();
+extern int variable_in_b;
+ABSL_DECLARE_FLAG(flag_in_b);
+\end{minted}
+
+\subsection{Pros}
+\begin{itemize}
+    \item Forward declarations can save compile time, as \mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{#include}s force the compiler to open more files and process more input.
+    \item Forward declarations can save on unnecessary recompilation. \mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{#include}s can force your code to be recompiled more often, due to unrelated changes in the header.
+\end{itemize}
+\subsection{Cons}
+\begin{itemize}
+    \item Forward declarations can hide a dependency, allowing user code to skip necessary recompilation when headers change.
+    \item A forward declaration as opposed to an \mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{#include} statement makes it difficult for automatic tooling to discover the module defining the symbol.
+    \item A forward declaration may be broken by subsequent changes to the library. Forward declarations of functions and templates can prevent the header owners from making otherwise-compatible changes to their APIs, such as widening a parameter type, adding a template parameter with a default value, or migrating to a new namespace.
+    \item Forward declaring symbols from namespace \mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{std::} yields undefined behavior.
+    \item It can be difficult to determine whether a forward declaration or a full \mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{#include} is needed. Replacing an \mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{#include} with a forward declaration can silently change the meaning of code:
+    % \vspace{-\baselineskip}
+    \begin{minted}[mathescape,
+        linenos,
+        numbersep=5pt,
+        autogobble, % 左对齐
+        breaklines,
+        frame=lines,
+        framesep=2mm]{C++}
+// b.h:
+struct B {};
+struct D : B {};
+
+// good_user.cc:
+#include "b.h"
+void f(B*);
+void f(void*);
+void test(D* x) { f(x); }  // Calls f(B*)
+    \end{minted}
+    If the \mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{#include} was replaced with forward decls for \mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{B} and \mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{D}, \mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{test()} would call \mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{f(void*)}.
+    \item Forward declaring multiple symbols from a header can be more verbose than simply \mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{#include}ing the header.
+    \item Structuring code to enable forward declarations (e.g., using pointer members instead of object members) can make the code slower and more complex.
+\end{itemize}
+\subsection{Decision}
+Try to avoid forward declarations of entities defined in another project.

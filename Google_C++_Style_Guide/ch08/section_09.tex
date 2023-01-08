@@ -1,0 +1,30 @@
+%! Author = codeclabs-cn
+%! Date = 2022/12/29
+
+\section{Use of const}\label{sec:use-of-const}
+In APIs, use \mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{const} whenever it makes sense. \mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{constexpr} is a better choice for some uses of const.
+
+\subsection{Definition}
+Declared variables and parameters can be preceded by the keyword \mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{const} to indicate the variables are not changed (e.g., \mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{const int foo}). Class functions can have the \mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{const} qualifier to indicate the function does not change the state of the class member variables (e.g., \mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{class Foo { int Bar(char c) const; };}).
+
+\subsection{Pros}
+Easier for people to understand how variables are being used. Allows the compiler to do better type checking, and, conceivably, generate better code. Helps people convince themselves of program correctness because they know the functions they call are limited in how they can modify your variables. Helps people know what functions are safe to use without locks in multi-threaded programs.
+
+\subsection{Cons}
+\mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{const} is viral: if you pass a \mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{const} variable to a function, that function must have \mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{const} in its prototype (or the variable will need a \mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{const_cast}). This can be a particular problem when calling library functions.
+
+\subsection{Decision}
+We strongly recommend using \mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{const} in APIs (i.e., on function parameters, methods, and non-local variables) wherever it is meaningful and accurate. This provides consistent, mostly compiler-verified documentation of what objects an operation can mutate. Having a consistent and reliable way to distinguish reads from writes is critical to writing thread-safe code, and is useful in many other contexts as well. In particular:
+\begin{itemize}
+    \item If a function guarantees that it will not modify an argument passed by reference or by pointer, the corresponding function parameter should be a reference-to-const (\mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{const T&}) or pointer-to-const (\mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{const T*}), respectively.
+    \item For a function parameter passed by value, \mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{const} has no effect on the caller, thus is not recommended in function declarations. See \hyperref[ch:tip-of-the-week-109]{TotW \#109}.
+    \item Declare methods to be \mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{const} unless they alter the logical state of the object (or enable the user to modify that state, e.g., by returning a non-const reference, but that's rare), or they can't safely be invoked concurrently.
+\end{itemize}
+Using \mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{const} on local variables is neither encouraged nor discouraged.
+
+All of a class's \mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{const} operations should be safe to invoke concurrently with each other. If that's not feasible, the class must be clearly documented as \enquote{thread-unsafe}.
+
+\subsubsection{Where to put the \mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{const}}
+Some people favor the form \mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{int const *foo} to \mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{const int* foo}. They argue that this is more readable because it's more consistent: it keeps the rule that \mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{const} always follows the object it's describing. However, this consistency argument doesn't apply in codebases with few deeply-nested pointer expressions since most \mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{const} expressions have only one \mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{const}, and it applies to the underlying value. In such cases, there's no consistency to maintain. Putting the \mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{const} first is arguably more readable, since it follows English in putting the \enquote{adjective} (\mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{const}) before the \enquote{noun} (\mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{int}).
+
+That said, while we encourage putting \mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{const} first, we do not require it. But be consistent with the code around you!

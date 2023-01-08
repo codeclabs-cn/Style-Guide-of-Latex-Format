@@ -1,0 +1,183 @@
+%! Author = codeclabs-cn
+%! Date = 2023/1/5
+
+\chapter{The Philosophy of Google's C++ Style Guide\texorpdfstring{\footnote{This is just the main part of Titus Winters's great presentation at \href{https://github.com/CppCon/CppCon2014/tree/master/Presentations/The Philosophy of Google's C++ Style Guide}{CppCon2014}. You can watch the full talk on Youbute \href{https://www.youtube.com/watch?v=NOCElcMcFik}{: The Philosophy of Google's C++ Style Guide}}}{}}
+\chapterauthor{Titus Winters (titus@google.com)}
+
+\begin{introduction}
+    \item \hyperref[sec:about-us]{About Us}
+    \item \hyperref[sec:the-underpinnings-of-googles-c++-style-guide]{The underpinnings of Google’s C++ Style Guide}
+    \item \hyperref[sec:the-contentious-rules]{The Contentious Rules}
+    \item \hyperref[sec:recap]{Recap}
+\end{introduction}
+
+\section{About Us}\label{sec:about-us}
+\begin{itemize}
+    \item 4K-ish C++ engineers
+    \item Shared codebase
+    \item Strong testing culture
+    \item Good indexer (Kythe)
+    \item Wild variance in C++ background
+    \item Good code review policies
+    \item We expect we’ll be around for a while, and should plan accordingly
+\end{itemize}
+Most projects check into the same codebase. Most engineers have read access to most code. Most projects use the same infrastructure (libraries, build system, etc).
+Code is going to live a long time, and be read many times. We choose explicitly to optimize for the reader, not the writer.
+
+\section{The underpinnings of Google’s C++ Style Guide}\label{sec:the-underpinnings-of-googles-c++-style-guide}
+
+\paragraph*{\#1 Optimize for the Reader, not the Writer}
+\begin{itemize}
+    \item We’re much more concerned with the experience of code readers.
+\end{itemize}
+
+\paragraph*{\#2 Rules Should Pull Their Weight}
+\begin{itemize}
+    \item We aren’t going to list every single thing you shouldn’t do. Rules for dumb stuff should be handled at a higher level (\enquote{Don’t be clever}).
+\end{itemize}
+
+\paragraph*{\#3 Value the Standard, but don’t Idolize}
+\begin{itemize}
+    \item Tracking the standard is valuable (cppreference.com, stackoverflow,etc). Not everything in the standard is equally good.
+\end{itemize}
+
+\paragraph*{\#4 Be Consistent}\mbox{}\newline
+Pros:
+\begin{itemize}
+    \item Consistency allows easier expert chunking.
+    \item Consistency allows tooling.
+    \item Consistency allows us to stop arguing about stuff that doesn’t matter.
+\end{itemize}
+Practices:
+\begin{itemize}
+    \item Include guard naming / formatting
+    \item Parameter ordering (input, then output, unless consistency with other things matters)
+    \item Namespaces (naming)
+    \item Declaration order
+    \item 0 and NULL vs. nullptr
+    \item Naming
+    \item Formatting
+    \item \color{red}\sout{Don’t use streams}
+\end{itemize}
+
+\paragraph*{\#5 If something unusual is happening, leave explicit evidence for the reader}
+\begin{itemize}
+    \item Old Example: \enquote{No non-const references} leads to \enquote{The extra \enquote*{\&} means it could be mutated}.
+\begin{minted}[escapeinside=||]{C++}
+int main(int argc, char** argv) {
+  ParseCommandLineFlags(|\colorbox{red}{&}|argc, |\colorbox{red}{&}|argv, true);
+}
+\end{minted}
+    \item New Example: The design of \mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{std::unique_ptr} makes it fit perfectly into a codebase with pre-C++-style pointers.
+    \begin{minted}[escapeinside=||]{C++}
+// Taking ownership: new from old.
+std::unique_ptr<Foo> my_foo(NewFoo());
+
+// or old from new
+Foo* my_foo = NewFoo().release();
+
+// or new from new
+std::unique_ptr<Foo> my_foo = NewFoo();
+
+// Yielding ownership (new to old)
+TakeFoo(my_foo.release());
+
+// or new to new
+TakeFoo(std::move(my_foo));
+
+// or old to new
+TakeFoo(std::make_unique<Foo>(my_foo));
+    \end{minted}
+    \item Rules that help leave a trace for the reader include:
+    \begin{itemize}
+        \item \mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{override} or \mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{final}
+        \item Interface classes - Name them with the \enquote{Interface} suffix
+        \item Function overloading - If it matters which overload is being called, make it obvious by inspection
+        \item No Exceptions - Error handling is explicit
+    \end{itemize}
+\end{itemize}
+
+\paragraph*{\#6 Avoid constructs that are dangerous or surprising}
+\begin{itemize}
+    \item Waivers here are probably rare, and would require a strong argument, and probably some comments to mitigate the chance of copy and paste re-using those patterns unsafely. Examples include:
+    \begin{itemize}
+        \item Static and global variables of complex type (danger at shutdown)
+        \item Use override or final (avoid surprise)
+        \item Exceptions (dangerous)
+    \end{itemize}
+    \item Most code should avoid the tricky stuff. Waivers may be granted if justified.
+    \begin{itemize}
+        \item Avoid macros (non-obvious, complicated)
+        \item Template metaprogramming (complicated, often non-obvious)
+        \item Non-public inheritance (surprising)
+        \item Multiple implementation inheritance (hard to maintain)
+    \end{itemize}
+\end{itemize}
+
+\paragraph*{\#7 Avoid polluting the global namespace}\mbox{}\newline
+Waivers here are unlikely except in very extreme cases.
+\begin{itemize}
+    \item Put your stuff in a namespace
+    \item Don’t \enquote{using} into the global namespace from a header
+    \item Inside a .cc: We don’t care much
+    \begin{itemize}
+        \item Still a distinction between using vs. using namespace
+    \end{itemize}
+\end{itemize}
+
+\paragraph*{\#8 Concede to optimization and practicalities when necessary}\mbox{}\newline
+Sometimes we make rulings just to state that an optimization may be healthy and necessary. (These are usually explicit \enquote{is allowed}.)
+\begin{itemize}
+    \item Allow forward declarations (\enquote{optimizing} build times)*
+    \item Inline functions
+    \item Prefer pre-increment (++i)
+\end{itemize}
+
+\section{The Contentious Rules}\label{sec:the-contentious-rules}
+\paragraph*{There are two (very) contentious rules:}
+\begin{itemize}
+    \item No non-const references as function arguments
+    \item No use of exceptions
+\end{itemize}
+
+\subsection{non-const references}
+\paragraph*{Three rules apply:}
+\begin{itemize}
+    \item Consistency
+    \item Leave a trace/explicitness
+    \item Dangerous/surprising constructs: reference lifetime issues
+\end{itemize}
+
+\subsection{no exceptions}
+\paragraph*{Some rules apply:}
+\begin{itemize}
+    \item Value the standard, but don’t idolize
+    \item Consistency
+    \begin{itemize}
+        \item This stems from old compiler bugs, but once that happened ...
+    \end{itemize}
+    \item Leave a trace
+    \item Dangerous/surprising constructs
+    \item Avoid hard to maintain constructs
+    \begin{itemize}
+        \item Consider cases where exception types are changed
+    \end{itemize}
+    \item Concede to optimization
+    \begin{itemize}
+        \item On average, code locality matters.
+    \end{itemize}
+\end{itemize}
+
+\section{Recap}\label{sec:recap}
+\begin{itemize}
+    \item Have a style guide. Tailor it to your situation.
+    \item Use your guide to encourage \enquote{good} and discourage \enquote{bad}.
+    \item Re-evaluate.
+\end{itemize}
+
+
+
+
+
+
+

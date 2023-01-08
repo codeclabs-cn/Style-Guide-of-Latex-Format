@@ -1,0 +1,83 @@
+%! Author = codeclabs-cn
+%! Date = 2023/1/4
+
+\chapter{Tip of the Week \#86: Enumerating with Class}\label{ch:tip-of-the-week-86}
+\chapterauthor{Bradley White (bww@google.com)}
+
+\epigraph{\itshape Show class, … and display character.}{---Bear Bryant}
+
+An enumeration, or simply an \mintinline{C++}{enum}, is a type that can hold one of a specified set of integers. Some values of this set can be given names, and are called the enumerators.
+
+\section{Unscoped Enumerations}\label{sec:unscoped-enumerations}
+This concept will be familiar to C++ programmers, but prior to C++11 enumerations had two significant shortcomings: the enumeration names were:
+\begin{itemize}
+    \item in the same scope as the enum type, and
+    \item implicitly convertible to values of some integer type.
+\end{itemize}
+
+So, with C++98 …
+\begin{minted}{C++}
+enum CursorDirection { kLeft, kRight, kUp, kDown };
+CursorDirection d = kLeft; // OK: enumerator in scope
+int i = kRight;            // OK: enumerator converts to int
+\end{minted}
+but, …
+\begin{minted}[bgcolor=code_bg_con]{C++}
+// error: redeclarations of kLeft and kRight
+enum PoliticalOrientation { kLeft, kCenter, kRight };
+\end{minted}
+
+C++11 modified the behavior of unscoped enums in one way: the enumerators are now local to the enum, but continue to be exported into the enum’s scope for backwards compatibility.
+
+So, with C++11 …
+\begin{minted}{C++}
+CursorDirection d = CursorDirection::kLeft;  // OK in C++11
+int i = CursorDirection::kRight;             // OK: still converts to int
+\end{minted}
+but the declaration of \mintinline{C++}{PoliticalOrientation} would still elicit errors.
+
+\section{Scoped Enumerations}\label{sec:scoped-enumerations}
+The implicit conversion to integer has been observed to be a common source of bugs, while the namespace pollution caused by having the enumerators in the same scope as the enum causes problems in large, multi-library projects. To address both these concerns, C++11 introduced a new concept: the \emph{scoped enum}.
+
+In a scoped enum, introduced by the keywords \mintinline{C++}{enum class}, the enumerators are:
+\begin{itemize}
+    \item only local to the enum (they are not exported into the enum’s scope), and
+    \item not implicitly convertible to integer types.
+\end{itemize}
+
+So, (note the additional class keyword) …
+\begin{minted}{C++}
+enum class CursorDirection { kLeft, kRight, kUp, kDown };
+CursorDirection d = kLeft;                    // error: kLeft not in this scope
+CursorDirection d2 = CursorDirection::kLeft;  // OK
+int i = CursorDirection::kRight;              // error: no conversion
+\end{minted}
+and, …
+\begin{minted}{C++}
+// OK: kLeft and kRight are local to each scoped enum
+enum class PoliticalOrientation { kLeft, kCenter, kRight };
+\end{minted}
+
+These simple changes eliminate the problems with plain enumerations, so enum class should be preferred in all new code.
+
+Using a scoped enum does mean that you’ll have to explicitly cast to an integer type should you still want such a conversion (e.g., when logging an enumeration value, or when using bitwise operations on flag-like enumerators). Hashing with \mintinline{C++}{std::hash} will continue to work though (e.g., \mintinline{C++}{std::unordered_map<CursorDirection, int>}).
+
+\section{Underlying Enumeration Types}\label{sec:underlying-enumeration-types}
+C++11 also introduced the ability to specify the underlying type for both varieties of enumeration. Previously the underlying integer type of an enum was determined by examining the sign and magnitude of the enumerators, but now we can be explicit. For example, …
+\begin{minted}{C++}
+// Use "int" as the underlying type for CursorDirection
+enum class CursorDirection : int { kLeft, kRight, kUp, kDown };
+\end{minted}
+Because this enumerator range is small, and if we wished to avoid wasting space when storing \mintinline{C++}{CursorDirection} values, we could specify \mintinline{C++}{char} instead.
+\begin{minted}{C++}
+// Use "char" as the underlying type for CursorDirection
+enum class CursorDirection : char { kLeft, kRight, kUp, kDown };
+\end{minted}
+The compiler will issue an error if an enumerator value exceeds the range of the underlying type.
+
+\section{Conclusion}\label{sec:conclusion2}
+Prefer using \mintinline{C++}{enum class} in new code. You’ll reduce namespace pollution, and you may avoid bugs in implicit conversions.
+\begin{minted}{C++}
+// Use "char" as the underlying type for CursorDirection
+enum class Parting { kSoLong, kFarewell, kAufWiedersehen, kAdieu };
+\end{minted}

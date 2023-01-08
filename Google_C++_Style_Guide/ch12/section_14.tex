@@ -1,0 +1,26 @@
+%! Author = codeclabs-cn
+%! Date = 2022/12/30
+
+\section{Variable and Array Initialization}\label{sec:variable-and-array-initialization}
+You may choose between \mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{=}, \mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{()}, and \mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{{}}; the following are all correct:
+\begin{minted}{C++}
+int x = 3;
+int x(3);
+int x{3};
+std::string name = "Some Name";
+std::string name("Some Name");
+std::string name{"Some Name"};
+\end{minted}
+
+Be careful when using a braced initialization list \mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{{...}} on a type with an \mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{std::initializer_list} constructor. A nonempty \emph{braced-init-list} prefers the \mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{std::initializer_list} constructor whenever possible. Note that empty braces \mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{{}} are special, and will call a default constructor if available. To force the non-\mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{std::initializer_list} constructor, use parentheses instead of braces.
+
+\begin{minted}{C++}
+std::vector<int> v(100, 1);  // A vector containing 100 items: All 1s.
+std::vector<int> v{100, 1};  // A vector containing 2 items: 100 and 1.
+\end{minted}
+Also, the brace form prevents narrowing of integral types. This can prevent some types of programming errors.
+
+\begin{minted}{C++}
+int pi(3.14);  // OK -- pi == 3.
+int pi{3.14};  // Compile error: narrowing conversion.
+\end{minted}

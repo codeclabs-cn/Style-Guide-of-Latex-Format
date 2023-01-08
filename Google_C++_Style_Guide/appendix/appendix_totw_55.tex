@@ -1,0 +1,62 @@
+%! Author = codeclabs-cn
+%! Date = 2023/1/4
+
+\chapter{Tip of the Week \#55:Name Counting and \texorpdfstring{\mintinline{C++}{unique_ptr}}{}}\label{ch:tip-of-the-week-55}
+
+\epigraph{\itshape Though we may know Him by a thousand names, He is one and the same to us all.}{---Mahatma Gandhi}
+
+Colloquially, a \enquote{name} for a value is any value-typed variable (not a pointer, nor a reference), in any scope, that holds a particular data value. (For the spec-lawyers, if we say \enquote{name} we’re essentially talking about lvalues.) Because of \mintinline{C++}{std::unique_ptr}’s specific behavioral requirements, we need to make sure that any value held in a \mintinline{C++}{std::unique_ptr} only has one name.
+
+It’s important to note that the C++ language committee picked a very apt name for \mintinline{C++}{std::unique_ptr}. Any non-null pointer value stored in a \mintinline{C++}{std::unique_ptr} must occur in only one \mintinline{C++}{std::unique_ptr} at any time; the standard library is designed to enforce this. Many common problems compiling code that uses \mintinline{C++}{std::unique_ptr} can be resolved by learning to recognize how to count the names for a \mintinline{C++}{std::unique_ptr}: one is OK, but multiple names for the same pointer value are not.
+
+Let’s count some names. At each line number, count the number of names alive at that point (whether in scope or not) that refer to a \mintinline{C++}{std::unique_ptr} containing the same pointer. If you find any line with more than one name for the same pointer value, that’s an error!
+
+\begin{minted}[bgcolor=code_bg_con]{C++}
+std::unique_ptr<Foo> NewFoo() {
+  return std::unique_ptr<Foo>(new Foo(1));
+}
+
+void AcceptFoo(std::unique_ptr<Foo> f) { f->PrintDebugString(); }
+
+void Simple() {
+  AcceptFoo(NewFoo());
+}
+
+void DoesNotBuild() {
+  std::unique_ptr<Foo> g = NewFoo();
+  AcceptFoo(g); // DOES NOT COMPILE!
+}
+
+void SmarterThanTheCompilerButNot() {
+  Foo* j = new Foo(2);
+  // Compiles, BUT VIOLATES THE RULE and will double-delete at runtime.
+  std::unique_ptr<Foo> k(j);
+  std::unique_ptr<Foo> l(j);
+}
+\end{minted}
+
+In \mintinline{C++}{Simple()}, the unique pointer allocated with \mintinline{C++}{NewFoo()} only ever has one name by which you could refer it: the name \enquote{f} inside \mintinline{C++}{AcceptFoo()}.
+
+Contrast this with \mintinline{C++}{DoesNotBuild()}: the unique pointer allocated with \mintinline{C++}{NewFoo()} has two names which refer to it: \mintinline{C++}{DoesNotBuild()}’s \enquote{g} and \mintinline{C++}{AcceptFoo()}’s \enquote{f}.
+
+This is the classic uniqueness violation: at any given point in the execution, any value held by a \mintinline{C++}{std::unique_ptr} (or more generally, any move-only type) can only be referred to by a single distinct name. Anything that looks like a copy introducing an additional name is forbidden and won’t compile:
+
+\begin{minted}[bgcolor=code_bg_con]{C++}
+scratch.cc: error: call to deleted constructor of std::unique_ptr<Foo>'
+  AcceptFoo(g);
+\end{minted}
+
+Even if the compiler doesn’t catch you, the runtime behavior of \mintinline{C++}{std::unique_ptr} will. Any time where you \enquote{outsmart} the compiler (see \mintinline{C++}{SmarterThanTheCompilerButNot()}) and introduce multiple \mintinline{C++}{std::unique_ptr} names, it may compile (for now) but you’ll get a run-time memory problem.
+
+Now the question becomes: how do we remove a name? C++11 provides a solution for that as well, in the form of \mintinline{C++}{std::move()}.
+
+\begin{minted}{C++}
+void EraseTheName() {
+  std::unique_ptr<Foo> h = NewFoo();
+  AcceptFoo(std::move(h)); // Fixes DoesNotBuild with std::move
+}
+\end{minted}
+
+The call to \mintinline{C++}{std::move()} is effectively a name-eraser: conceptually you can stop counting \enquote{h} as a name for the pointer value. This now passes the distinct-names rule: on the unique pointer allocated with \mintinline{C++}{NewFoo()} has a single name (\enquote{h}), and within the call to \mintinline{C++}{AcceptFoo()} there is again only a single name (\enquote{f}). By using \mintinline{C++}{std::move()} we promise that we will not read from \enquote{h} again until we assign a new value to it.
+
+Name counting is a handy trick in modern C++ for those that aren’t expert in the subtleties of lvalues, rvalues, etc: it can help you recognize the possibility of unnecessary copies, and it will help you use \mintinline{C++}{std::unique_ptr} properly. After counting, if you discover a point where there are too many names, use \mintinline{C++}{std::move} to erase the no-longer-necessary name.

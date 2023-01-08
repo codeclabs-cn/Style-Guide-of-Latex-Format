@@ -1,0 +1,27 @@
+%! Author = codeclabs-cn
+%! Date = 2022/12/29
+
+\section{Function Overloading}\label{sec:function-overloading}
+Use overloaded functions (including constructors) only if a reader looking at a call site can get a good idea of what is happening without having to first figure out exactly which overload is being called.
+
+\subsection{Definition}
+You may write a function that takes a const \mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{std::string&} and overload it with another that takes \mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{const char*}. However, in this case consider \mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{std::string_view} instead.
+% \vspace{-\baselineskip}
+\begin{minted}{C++}
+class MyClass {
+ public:
+  void Analyze(const std::string &text);
+  void Analyze(const char *text, size_t textlen);
+};
+\end{minted}
+
+\subsection{Pros}
+Overloading can make code more intuitive by allowing an identically-named function to take different arguments. It may be necessary for templatized code, and it can be convenient for Visitors.
+
+Overloading based on const or ref qualification may make utility code more usable, more efficient, or both. (See \hyperref[ch:tip-of-the-week-148]{TotW \#148} for more.)
+
+\subsection{Cons}
+If a function is overloaded by the argument types alone, a reader may have to understand C++'s complex matching rules in order to tell what's going on. Also many people are confused by the semantics of inheritance if a derived class overrides only some of the variants of a function.
+
+\subsection{Decision}
+You may overload a function when there are no semantic differences between variants. These overloads may vary in types, qualifiers, or argument count. However, a reader of such a call must not need to know which member of the overload set is chosen, only that \textbf{something} from the set is being called. If you can document all entries in the overload set with a single comment in the header, that is a good sign that it is a well-designed overload set.

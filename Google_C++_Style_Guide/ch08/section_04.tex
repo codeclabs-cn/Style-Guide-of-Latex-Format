@@ -1,0 +1,27 @@
+%! Author = codeclabs-cn
+%! Date = 2022/12/29
+
+\section{\texorpdfstring{\mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{noexcept}}{}}\label{sec:noexcept}
+Specify \mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{noexcept} when it is useful and correct.
+
+\subsection{Definition}
+The \mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{noexcept} specifier is used to specify whether a function will throw exceptions or not. If an exception escapes from a function marked noexcept, the program crashes via \mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{std::terminate}.
+
+The \mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{noexcept} operator performs a compile-time check that returns true if an expression is declared to not throw any exceptions.
+
+\subsection{Pros}
+\begin{itemize}
+    \item Specifying move constructors as \mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{noexcept} improves performance in some cases, e.g., \mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{std::vector<T>::resize()} moves rather than copies the objects if T's move constructor is \mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{noexcept}.
+    \item Specifying \mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{noexcept} on a function can trigger compiler optimizations in environments where exceptions are enabled, e.g., compiler does not have to generate extra code for stack-unwinding, if it knows that no exceptions can be thrown due to a \mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{noexcept} specifier.
+\end{itemize}
+
+\subsection{Cons}
+\begin{itemize}
+    \item In projects following this guide that have exceptions disabled it is hard to ensure that \mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{noexcept} specifiers are correct, and hard to define what correctness even means.
+    \item It's hard, if not impossible, to undo \mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{noexcept} because it eliminates a guarantee that callers may be relying on, in ways that are hard to detect.
+\end{itemize}
+
+\subsection{Decision}
+You may use \mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{noexcept} when it is useful for performance if it accurately reflects the intended semantics of your function, i.e., that if an exception is somehow thrown from within the function body then it represents a fatal error. You can assume that \mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{noexcept} on move constructors has a meaningful performance benefit. If you think there is significant performance benefit from specifying \mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{noexcept} on some other function, please discuss it with your project leads.
+
+Prefer unconditional \mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{noexcept} if exceptions are completely disabled (i.e., most Google C++ environments). Otherwise, use conditional \mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{noexcept} specifiers with simple conditions, in ways that evaluate false only in the few cases where the function could potentially throw. The tests might include type traits check on whether the involved operation might throw (e.g., \mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{std::is_nothrow_move_constructible} for move-constructing objects), or on whether allocation can throw (e.g., \mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{absl::default_allocator_is_nothrow} for standard default allocation). Note in many cases the only possible cause for an exception is allocation failure (we believe move constructors should not throw except due to allocation failure), and there are many applications where it’s appropriate to treat memory exhaustion as a fatal error rather than an exceptional condition that your program should attempt to recover from. Even for other potential failures you should prioritize interface simplicity over supporting all possible exception throwing scenarios: instead of writing a complicated \mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{noexcept} clause that depends on whether a hash function can throw, for example, simply document that your component doesn’t support hash functions throwing and make it unconditionally \mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{noexcept}.

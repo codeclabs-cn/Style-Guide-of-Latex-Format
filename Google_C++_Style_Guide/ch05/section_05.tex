@@ -1,0 +1,9 @@
+%! Author = codeclabs-cn
+%! Date = 2022/12/29
+
+\section{Structs vs. Pairs and Tuples}\label{sec:structs-vs.-pairs-and-tuples}
+Prefer to use a \mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{struct} instead of a pair or a tuple whenever the elements can have meaningful names.
+
+While using pairs and tuples can avoid the need to define a custom type, potentially saving work when \emph{writing} code, a meaningful field name will almost always be much clearer when \emph{reading} code than \mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{.first}, \mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{.second}, or \mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{std::get<X>}. While C++14's introduction of \mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{std::get<Type>} to access a tuple element by type rather than index (when the type is unique) can sometimes partially mitigate this, a field name is usually substantially clearer and more informative than a type.
+
+Pairs and tuples may be appropriate in generic code where there are not specific meanings for the elements of the pair or tuple. Their use may also be required in order to interoperate with existing code or APIs.

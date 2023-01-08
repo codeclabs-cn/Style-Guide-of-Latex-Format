@@ -1,0 +1,31 @@
+%! Author = codeclabs-cn
+%! Date = 2022/12/29
+
+\section{Streams}\label{sec:streams}
+Use streams where appropriate, and stick to \enquote{simple} usages. Overload \mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{<<} for streaming only for types representing values, and write only the user-visible value, not any implementation details.
+
+\subsection{Definition}
+Streams are the standard I/O abstraction in C++, as exemplified by the standard header \mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{<iostream>}. They are widely used in Google code, mostly for debug logging and test diagnostics.
+
+\subsection{Pros}
+The \mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{<<} and \mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{>>} stream operators provide an API for formatted I/O that is easily learned, portable, reusable, and extensible. \mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{printf}, by contrast, doesn't even support \mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{std::string}, to say nothing of user-defined types, and is very difficult to use portably. \mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{printf} also obliges you to choose among the numerous slightly different versions of that function, and navigate the dozens of conversion specifiers.
+
+Streams provide first-class support for console I/O via \mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{std::cin}, \mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{std::cout}, \mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{std::cerr}, and \mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{std::clog}. The C APIs do as well, but are hampered by the need to manually buffer the input.
+
+\subsection{Cons}
+\begin{itemize}
+    \item Stream formatting can be configured by mutating the state of the stream. Such mutations are persistent, so the behavior of your code can be affected by the entire previous history of the stream, unless you go out of your way to restore it to a known state every time other code might have touched it. User code can not only modify the built-in state, it can add new state variables and behaviors through a registration system.
+    \item It is difficult to precisely control stream output, due to the above issues, the way code and data are mixed in streaming code, and the use of operator overloading (which may select a different overload than you expect).
+    \item The practice of building up output through chains of \mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{<<} operators interferes with internationalization, because it bakes word order into the code, and streams' support for localization is \href{http://www.boost.org/doc/libs/1_48_0/libs/locale/doc/html/rationale.html#rationale_why}{flawed}.
+    \item The streams API is subtle and complex, so programmers must develop experience with it in order to use it effectively.
+    \item Resolving the many overloads of \mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{<<} is extremely costly for the compiler. When used pervasively in a large code base, it can consume as much as 20\% of the parsing and semantic analysis time.
+\end{itemize}
+
+\subsection{Decision}
+Use streams only when they are the best tool for the job. This is typically the case when the I/O is ad-hoc, local, human-readable, and targeted at other developers rather than end-users. Be consistent with the code around you, and with the codebase as a whole; if there's an established tool for your problem, use that tool instead. In particular, logging libraries are usually a better choice than \mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{std::cerr} or \mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{std::clog} for diagnostic output, and the libraries in \mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{absl/strings} or the equivalent are usually a better choice than \mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{std::stringstream}.
+
+Avoid using streams for I/O that faces external users or handles untrusted data. Instead, find and use the appropriate templating libraries to handle issues like internationalization, localization, and security hardening.
+
+If you do use streams, avoid the stateful parts of the streams API (other than error state), such as \mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{imbue()}, \mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{xalloc()}, and \mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{register_callback()}. Use explicit formatting functions (such as \mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{absl::StreamFormat()}) rather than stream manipulators or formatting flags to control formatting details such as number base, precision, or padding.
+
+Overload \mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{<<} as a streaming operator for your type only if your type represents a value, and \mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{<<} writes out a human-readable string representation of that value. Avoid exposing implementation details in the output of \mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{<<}; if you need to print object internals for debugging, use named functions instead (a method named \mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{DebugString()} is the most common convention).

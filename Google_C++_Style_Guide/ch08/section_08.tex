@@ -1,0 +1,17 @@
+%! Author = codeclabs-cn
+%! Date = 2022/12/29
+
+\section{Preincrement and Predecrement}\label{sec:preincrement-and-predecrement}
+Use the prefix form (\mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{++i}) of the increment and decrement operators unless you need postfix semantics.
+
+\subsection{Definition}
+When a variable is incremented (\mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{++i} or \mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{i++}) or decremented (\mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{--i} or \mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{i--}) and the value of the expression is not used, one must decide whether to preincrement (decrement) or postincrement (decrement).
+
+\subsection{Pros}
+A postfix increment/decrement expression evaluates to the value \emph{as it was before it was modified}. This can result in code that is more compact but harder to read. The prefix form is generally more readable, is never less efficient, and can be more efficient because it doesn't need to make a copy of the value as it was before the operation.
+
+\subsection{Cons}
+The tradition developed, in C, of using post-increment, even when the expression value is not used, especially in \mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{for} loops.
+
+\subsection{Decision}
+Use prefix increment/decrement, unless the code explicitly needs the result of the postfix increment/decrement expression.

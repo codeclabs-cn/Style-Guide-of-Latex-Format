@@ -1,0 +1,7 @@
+%! Author = codeclabs-cn
+%! Date = 2022/12/29
+
+\section{Access Control}\label{sec:access-control}
+Make classes' data members \mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{private}, unless they are \hyperref[subsec:constant-names]{constants}. This simplifies reasoning about invariants, at the cost of some easy boilerplate in the form of accessors (usually \mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{const}) if necessary.
+
+For technical reasons, we allow data members of a test fixture class defined in a \mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{.cc} file to be \mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{protected} when using \href{https://github.com/google/googletest}{Google Test}. If a test fixture class is defined outside of the \mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{.cc} file it is used in, for example in a \mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{.h} file, make data members \mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{private}.

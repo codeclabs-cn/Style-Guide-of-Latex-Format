@@ -1,0 +1,40 @@
+%! Author = codeclabs-cn
+%! Date = 2022/12/29
+
+\section{Operator Overloading}\label{sec:operator-overloading}
+Overload operators judiciously. Do not use user-defined literals.
+
+\subsection{Definition}
+C++ permits user code to \href{http://en.cppreference.com/w/cpp/language/operators}{declare overloaded versions of the built-in operators} using the \mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{operator} keyword, so long as one of the parameters is a user-defined type. The \mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{operator} keyword also permits user code to define new kinds of literals using \mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{operator""}, and to define type-conversion functions such as \mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{operator bool()}.
+
+\subsection{Pros}
+Operator overloading can make code more concise and intuitive by enabling user-defined types to behave the same as built-in types. Overloaded operators are the idiomatic names for certain operations (e.g., \mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{==}, \mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{<}, \mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{=}, and \mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{<<}), and adhering to those conventions can make user-defined types more readable and enable them to interoperate with libraries that expect those names.
+
+User-defined literals are a very concise notation for creating objects of user-defined types.
+
+\subsection{Cons}
+\begin{itemize}
+\item Providing a correct, consistent, and unsurprising set of operator overloads requires some care, and failure to do so can lead to confusion and bugs.
+\item Overuse of operators can lead to obfuscated code, particularly if the overloaded operator's semantics don't follow convention.
+\item The hazards of function overloading apply just as much to operator overloading, if not more so.
+\item Operator overloads can fool our intuition into thinking that expensive operations are cheap, built-in operations.
+\item Finding the call sites for overloaded operators may require a search tool that's aware of C++ syntax, rather than e.g., grep.
+\item If you get the argument type of an overloaded operator wrong, you may get a different overload rather than a compiler error. For example, \mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{foo < bar} may do one thing, while \mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{&foo < &bar} does something totally different.
+\item Certain operator overloads are inherently hazardous. Overloading unary \mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{&} can cause the same code to have different meanings depending on whether the overload declaration is visible. Overloads of \mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{&&}, \mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{||}, and \mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{,} (comma) cannot match the evaluation-order semantics of the built-in operators.
+\item Operators are often defined outside the class, so there's a risk of different files introducing different definitions of the same operator. If both definitions are linked into the same binary, this results in undefined behavior, which can manifest as subtle run-time bugs.
+\item User-defined literals (UDLs) allow the creation of new syntactic forms that are unfamiliar even to experienced C++ programmers, such as \mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{"Hello World"sv} as a shorthand for \mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{std::string_view("Hello World")}. Existing notations are clearer, though less terse.
+\item Because they can't be namespace-qualified, uses of UDLs also require use of either using-directives (which \hyperref[sec:namespaces]{we ban}) or using-declarations (which \hyperref[sec:aliases]{we ban in header files} except when the imported names are part of the interface exposed by the header file in question). Given that header files would have to avoid UDL suffixes, we prefer to avoid having conventions for literals differ between header files and source files.
+\end{itemize}
+
+\subsection{Decision}
+Define overloaded operators only if their meaning is obvious, unsurprising, and consistent with the corresponding built-in operators. For example, use \mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{|} as a bitwise- or logical-or, not as a shell-style pipe.
+
+Define operators only on your own types. More precisely, define them in the same headers, \mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{.cc} files, and namespaces as the types they operate on. That way, the operators are available wherever the type is, minimizing the risk of multiple definitions. If possible, avoid defining operators as templates, because they must satisfy this rule for any possible template arguments. If you define an operator, also define any related operators that make sense, and make sure they are defined consistently. For example, if you overload \mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{<}, overload all the comparison operators, and make sure \mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{<} and \mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{>} never return true for the same arguments.
+
+Prefer to define non-modifying binary operators as non-member functions. If a binary operator is defined as a class member, implicit conversions will apply to the right-hand argument, but not the left-hand one. It will confuse your users if \mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{a < b} compiles but \mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{b < a} doesn't.
+
+Don't go out of your way to avoid defining operator overloads. For example, prefer to define \mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{==}, \mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{=}, and \mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{<<}, rather than \mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{Equals()}, \mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{CopyFrom()}, and \mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{PrintTo()}. Conversely, don't define operator overloads just because other libraries expect them. For example, if your type doesn't have a natural ordering, but you want to store it in a \mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{std::set}, use a custom comparator rather than overloading \mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{<}.
+
+Do not overload \mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{&&}, \mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{||}, \mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{,} (comma), or unary \mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{&}. Do not overload \mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{operator""}, i.e., do not introduce user-defined literals. Do not use any such literals provided by others (including the standard library).
+
+Type conversion operators are covered in the section on \hyperref[sec:implicit-conversions]{implicit conversions}. The \mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{=} operator is covered in the section on \hyperref[sec:copyable-and-movable-types]{copy constructors}. Overloading \mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{<<} for use with streams is covered in the section on \hyperref[sec:streams]{streams}. See also the rules on \hyperref[sec:function-overloading]{function overloading}, which apply to operator overloading as well.

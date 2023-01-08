@@ -1,0 +1,18 @@
+%! Author = codeclabs-cn
+%! Date = 2022/12/31
+
+\section{File Names}\label{sec:file-names}
+Filenames should be all lowercase and can include underscores (\mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{_}) or dashes (\mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{-}). Follow the convention that your project uses. If there is no consistent local pattern to follow, prefer "\mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{_}".
+
+Examples of acceptable file names:
+\begin{itemize}
+    \item \mintinline[breakanywhere,bgcolor=code_bg_pro]{Text}{my_useful_class.cc}
+    \item \mintinline[breakanywhere,bgcolor=code_bg_pro]{Text}{my-useful-class.cc}
+    \item \mintinline[breakanywhere,bgcolor=code_bg_pro]{Text}{myusefulclass.cc}
+    \item \mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{myusefulclass_test.cc // _unittest and _regtest are deprecated.}
+\end{itemize}
+C++ files should end in \mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{.cc} and header files should end in \mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{.h}. Files that rely on being textually included at specific points should end in \mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{.inc} (see also the section on \hyperref[sec:self-contained-headers]{self-contained headers}).
+
+Do not use filenames that already exist in \mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{/usr/include}, such as \mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{db.h}.
+
+In general, make your filenames very specific. For example, use \mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{http_server_logs.h} rather than \mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{logs.h}. A very common case is to have a pair of files called, e.g., \mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{foo_bar.h} and \mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{foo_bar.cc}, defining a class called \mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{FooBar}.

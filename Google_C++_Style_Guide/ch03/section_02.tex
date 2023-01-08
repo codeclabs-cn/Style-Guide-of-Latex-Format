@@ -1,0 +1,16 @@
+%! Author = codeclabs-cn
+%! Date = 2022/12/29
+
+\section{The \texorpdfstring{\colorbox{code_bg_pro}{\#}\mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{define}}{} Guard}\label{sec:the-define-guard}
+All header files should have \mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{#define} guards to prevent multiple inclusion. The format of the symbol name should be \mintinline[breakanywhere,bgcolor=code_bg_pro]{Text}{<PROJECT>_<PATH>_<FILE>_H_}.
+
+To guarantee uniqueness, they should be based on the full path in a project's source tree. For example, the file \mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{foo/src/bar/baz.h} in project \mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{foo} should have the following guard:
+% \vspace{-\baselineskip}
+\begin{minted}{C++}
+#ifndef FOO_BAR_BAZ_H_
+#define FOO_BAR_BAZ_H_
+
+...
+
+#endif  // FOO_BAR_BAZ_H_
+\end{minted}

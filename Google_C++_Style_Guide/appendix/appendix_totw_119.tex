@@ -1,0 +1,168 @@
+%! Author = codeclabs-cn
+%! Date = 2023/1/4
+
+\chapter{Tip of the Week \#119: Using-declarations and namespace aliases}\label{ch:tip-of-the-week-119}
+\chapterauthor{Thomas Köppe (tkoeppe@google.com)}
+
+This tip gives a simple, robust recipe for writing \emph{using-declarations} and namespace aliases in \mintinline{C++}{.cc} files that avoids subtle pitfalls.
+
+Before we dive into the details, here is an example of the recipe in action:
+
+\begin{minted}{C++}
+namespace example {
+namespace makers {
+namespace {
+
+using ::otherlib::BazBuilder;
+using ::mylib::BarFactory;
+namespace abc = ::applied::bitfiddling::concepts;
+
+// Private helper code here.
+
+}  // namespace
+
+// Interface implementation code here.
+
+}  // namespace makers
+}  // namespace example
+\end{minted}
+
+Remember that everything in this tip applies only to \mintinline{C++}{.cc} files, since you should \hyperref[sec:aliases]{never put convenience aliases in header files}. Such aliases are a convenience for the implementer (and the reader of an implementation), not an exported facility. (Names that \emph{are} part of the exported API may of course be declared in headers.)
+
+\section{Summary}
+\begin{itemize}
+    \item Never declare namespace aliases or convenience \emph{using-declarations} at namespace scope in header files, only in \mintinline{C++}{.cc} files.
+    \item Declare namespace aliases and \emph{using-declarations} inside the innermost namespace, whether named or anonymous. (Do not add an anonymous namespace just for this purpose.)
+    \item When declaring namespace aliases and \emph{using-declarations}, use fully qualified names (with leading \mintinline{C++}{::}) unless you are referring to a name inside the current namespace.
+    \item For other uses of names, avoid fully qualifying when reasonable, see \hyperref[ch:tip-of-the-week-130]{TotW \#130}.
+\end{itemize}
+(Remember that you can always have a local namespace alias or \emph{using-declaration} in a block scope, which can be handy in header-only libraries.)
+
+\section{Background}
+C++ organizes names into \emph{namespaces}. This crucial facility allows code bases to scale by keeping ownership of names local avoiding name collisions in other scopes. However, namespaces impose a certain cosmetic burden, since qualified names (\mintinline{C++}{foo::Bar}) are often long and quickly become clutter. We often find it convenient to use \emph{unqualified names} (\mintinline{C++}{Bar}). Additionally, we may wish to introduce a namespace alias for a long but frequently used namespace: \mintinline{C++}{namespace eu = example::v1::util;} We will collectively call \emph{using-declarations} and namespace \emph{aliases} just aliases in this tip.
+
+
+\section{The Problem}
+The purpose of a namespace is to help code authors avoid name collisions, both at the point of name lookup and at the point of linking. Aliases can potentially undermine the protection afforded by namespaces. The problem has two separate aspects: the scope of the alias, and the use of relative qualifiers.
+
+\subsubsection{Scope of the Alias}
+The scope at which you place an alias can have subtle effects on code maintainability. Consider the following two variants:
+\begin{minted}{C++}
+using ::foo::Quz;
+
+namespace example {
+namespace util {
+
+using ::foo::Bar;
+\end{minted}
+
+It appears that both \emph{using-declarations} are effective at making the names \mintinline{C++}{Bar} and \mintinline{C++}{Quz} available for unqualified lookup inside our working namespace \mintinline{C++}{::example::util}. For \mintinline{C++}{Bar}, everything is working as expected, provided there is no other declaration of \mintinline{C++}{Bar} inside namespace \mintinline{C++}{::example::util}. But this is your namespace, so it is in your power to control this.
+
+On the other hand, if a header is later included that declares a global name \mintinline{C++}{Quz}, then the first \emph{using-declaration} becomes ill-formed, as it attempts to redeclare the name \mintinline{C++}{Quz}. And if another header declares \mintinline{C++}{::example::Quz} or \mintinline{C++}{::example::util::Quz}, then unqualified lookup will find that name rather than your alias.
+
+This brittleness can be avoided if you do not add names to namespaces that you do not own (which includes the global namespace). By placing the aliases inside your own namespace, the unqualified lookup finds your alias first and never continues to search containing namespaces.
+
+More generally, the closer a declaration is to the point of use, the smaller is the set of scopes that can break your code. At the worst end of our example is \mintinline{C++}{Quz}, which can be broken by anyone; \mintinline{C++}{Bar} can only be broken by other code in \mintinline{C++}{::example::util}, and a name that is declared and used inside an unnamed namespace cannot be broken by any other scope. See \hyperref[sec:unnamed-namespaces]{Unnamed Namespaces} for an example.
+
+\subsubsection{Relative Qualifiers}
+A \emph{using-declaration} of the form \mintinline{C++}{using foo::Bar} seems innocuous, but it is in fact ambiguous. The problem is that it is safe to rely on the existence of names in a namespace, but it is not safe to rely on the \emph{absence} of names. Consider this code:
+\begin{minted}{C++}
+namespace example {
+namespace util {
+
+using foo::Bar;
+\end{minted}
+
+It is perhaps the author’s intention to use the name \mintinline{C++}{::foo::Bar}. However, this can break, because the code is relying on the existence of \mintinline{C++}{::foo::Bar} and also on the non-existence of namespaces \mintinline{C++}{::example::foo} and \mintinline{C++}{::example::util::foo}. This brittleness can be avoided by qualifying the used name fully: \mintinline{C++}{using ::foo::Bar}.
+
+The only time that a relative name is unambiguous and cannot possibly be broken by outside declarations is if it refers to a name that is already inside your current namespace:
+\begin{minted}{C++}
+namespace example {
+namespace util {
+namespace internal {
+
+struct Params { /* ... */ };
+
+}  // namespace internal
+
+using internal::Params;  // OK, same as ::example::util::internal::Params
+\end{minted}
+
+This follows the same logic that we discussed in the previous section.
+
+What if a name lives in a sibling namespace, such as \mintinline{C++}{::example::tools::Thing}? You can say either \mintinline{C++}{tools::Thing} or \mintinline{C++}{::example::tools::Thing}. The fully qualified name is always correct, but it may also be appropriate to use the relative name. Use your own judgment.
+
+A cheap way to avoid a lot of these problems is not to use namespaces in your project that are the same as popular top-level namespaces (such as \mintinline{C++}{util}); the Style Guide \hyperref[subsec:namespace-names]{recommends this practice} explicitly.
+
+\subsubsection{Demo}
+The following code shows examples of both failure modes.
+
+\textbf{\mintinline{C++}{helper.h}}:
+\begin{minted}{C++}
+namespace bar {
+namespace foo {
+
+// ...
+
+}  // namespace foo
+}  // namespace bar
+\end{minted}
+
+\textbf{\mintinline{C++}{some_feature.h}}:
+\begin{minted}{C++}
+extern int f;
+\end{minted}
+
+\textbf{\mintinline{C++}{Your code}}:
+\begin{minted}{C++}
+#include "helper.h"
+#include "some_feature.h"
+
+namespace foo {
+void f();
+}  // namespace foo
+
+// Failure mode #1: Alias at a bad scope.
+using foo::f;  // Error: redeclaration (because of "f" declared in some_feature.h)
+
+namespace bar {
+
+// Failure mode #2: Alias badly qualified.
+using foo::f;  // Error: No "f" in namespace ::bar::foo (because that namespace was declared in helper.h)
+
+// The recommended way, robust in the face of unrelated declarations:
+using ::foo::f;  // OK
+
+void UseCase() { f(); }
+
+}  // namespace bar
+\end{minted}
+
+\section{Unnamed Namespaces}\label{sec:unnamed-namespaces}
+
+A \emph{using-declaration} placed in an unnamed namespace can be accessed from the enclosing namespace and vice versa. If you already have an unnamed namespace at the top of the file, prefer putting all aliases there. From within that unnamed namespace, you gain an extra little bit of robustness against clashing with something declared in the enclosing namespace.
+
+\begin{minted}{C++}
+namespace example {
+namespace util {
+
+namespace {
+
+// Put all using-declarations in here. Don't spread them over the file.
+using ::foo::Bar;
+using ::foo::Quz;
+
+// In here, Bar and Quz refer inalienably to your aliases.
+
+}  // namespace
+
+// Can use both Bar and Quz here too. (But don't declare any entities called Bar or Quz yourself now.)
+\end{minted}
+
+\section{Non-aliased names}
+So far we have been talking about local aliases for distant names. But what if we want to use names directly and not create aliases at all? Should we say \mintinline{C++}{util::Status} or \mintinline{C++}{::util::Status}?
+
+There is no obvious answer. Unlike the alias declarations that we have been discussing until now, which appear at the top of the file far away from the actual code, the direct use of names affects the local readability of your code. While it is true that relatively qualified names may break in the future, there is a significant cost for using absolute qualifications. The visual clutter caused by the leading \mintinline{C++}{::} may well be distracting and not worth the added robustness. In this case, use your own judgment to decide which style you prefer. See \hyperref[ch:tip-of-the-week-130]{TotW \#130}.
+
+\section{Acknowledgments}
+All credit is due to Roman Perepelitsa (romanp@google.com) who originally suggested this style in a mailing list discussion and who contributed numerous corrections and punchlines. However, all errors are mine.

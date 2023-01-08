@@ -1,0 +1,33 @@
+%! Author = codeclabs-cn
+%! Date = 2022/12/29
+
+\section{Exceptions}\label{sec:exceptions}
+We do not use C++ exceptions.
+\subsection{Pros}
+\begin{itemize}
+    \item Exceptions allow higher levels of an application to decide how to handle \enquote{can't happen} failures in deeply nested functions, without the obscuring and error-prone bookkeeping of error codes.
+    \item Exceptions are used by most other modern languages. Using them in C++ would make it more consistent with Python, Java, and the C++ that others are familiar with.
+    \item Some third-party C++ libraries use exceptions, and turning them off internally makes it harder to integrate with those libraries.
+    \item Exceptions are the only way for a constructor to fail. We can simulate this with a factory function or an \mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{Init()} method, but these require heap allocation or a new \enquote{invalid} state, respectively.
+    \item Exceptions are really handy in testing frameworks.
+\end{itemize}
+
+\subsection{Cons}
+\begin{itemize}
+    \item When you add a \mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{throw} statement to an existing function, you must examine all of its transitive callers. Either they must make at least the basic exception safety guarantee, or they must never catch the exception and be happy with the program terminating as a result. For instance, if \mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{f()} calls \mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{g()} calls \mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{h()}, and \mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{h} throws an exception that \mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{f} catches, \mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{g} has to be careful or it may not clean up properly.
+    \item More generally, exceptions make the control flow of programs difficult to evaluate by looking at code: functions may return in places you don't expect. This causes maintainability and debugging difficulties. You can minimize this cost via some rules on how and where exceptions can be used, but at the cost of more that a developer needs to know and understand.
+    \item Exception safety requires both RAII and different coding practices. Lots of supporting machinery is needed to make writing correct exception-safe code easy. Further, to avoid requiring readers to understand the entire call graph, exception-safe code must isolate logic that writes to persistent state into a \enquote{commit} phase. This will have both benefits and costs (perhaps where you're forced to obfuscate code to isolate the commit). Allowing exceptions would force us to always pay those costs even when they're not worth it.
+    \item Turning on exceptions adds data to each binary produced, increasing compile time (probably slightly) and possibly increasing address space pressure.
+    \item The availability of exceptions may encourage developers to throw them when they are not appropriate or recover from them when it's not safe to do so. For example, invalid user input should not cause exceptions to be thrown. We would need to make the style guide even longer to document these restrictions!
+\end{itemize}
+
+\subsection{Decision}
+On their face, the benefits of using exceptions outweigh the costs, especially in new projects. However, for existing code, the introduction of exceptions has implications on all dependent code. If exceptions can be propagated beyond a new project, it also becomes problematic to integrate the new project into existing exception-free code. Because most existing C++ code at Google is not prepared to deal with exceptions, it is comparatively difficult to adopt new code that generates exceptions.
+
+Given that Google's existing code is not exception-tolerant, the costs of using exceptions are somewhat greater than the costs in a new project. The conversion process would be slow and error-prone. We don't believe that the available alternatives to exceptions, such as error codes and assertions, introduce a significant burden.
+
+Our advice against using exceptions is not predicated on philosophical or moral grounds, but practical ones. Because we'd like to use our open-source projects at Google and it's difficult to do so if those projects use exceptions, we need to advise against exceptions in Google open-source projects as well. Things would probably be different if we had to do it all over again from scratch.
+
+This prohibition also applies to exception handling related features such as \mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{std::exception_ptr} and \mintinline[breakanywhere,bgcolor=code_bg_pro]{C++}{std::nested_exception}.
+
+There is an \hyperref[sec:windows-code]{exception} to this rule (no pun intended) for Windows code.
